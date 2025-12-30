@@ -1,8 +1,8 @@
 export function generateGroupCode(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const digits = '0123456789';
   let code = '';
   for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+    code += digits.charAt(Math.floor(Math.random() * digits.length));
   }
   return code;
 }
