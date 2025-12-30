@@ -4,6 +4,7 @@ import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { UsernamePrompt } from './UsernamePrompt';
 import { TypingIndicator } from './TypingIndicator';
+import { WelcomeDialog } from './WelcomeDialog';
 import { useMessages } from '@/hooks/useMessages';
 import { usePresence } from '@/hooks/usePresence';
 import { useUsername } from '@/hooks/useUsername';
@@ -57,13 +58,15 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
     : undefined;
 
   return (
-    <div 
-      className={cn(
-        "flex h-screen flex-col w-full",
-        !currentBackground.isCustom && currentBackground.style
-      )}
-      style={backgroundStyle}
-    >
+    <>
+      <WelcomeDialog inChatRoom />
+      <div 
+        className={cn(
+          "flex h-screen flex-col w-full",
+          !currentBackground.isCustom && currentBackground.style
+        )}
+        style={backgroundStyle}
+      >
       {/* Centered container for desktop */}
       <div className="flex flex-col h-full w-full max-w-[1100px] mx-auto">
         <GroupHeader 
@@ -94,5 +97,6 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
         />
       </div>
     </div>
+    </>
   );
 }
