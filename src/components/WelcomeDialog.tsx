@@ -52,7 +52,7 @@ export function WelcomeDialog() {
             <Sparkles className="h-4 w-4 text-primary" />
             <span>Developed by</span>
           </div>
-          <p className="mt-1 font-semibold text-foreground">TRION SOLUTION PVT LTD</p>
+          <p className="mt-1 font-semibold text-foreground">TRIONE SOLUTIONS PVT LTD</p>
           <p className="text-sm text-muted-foreground">by ASUREDDY</p>
         </div>
         <Button onClick={handleClose} className="mt-4 w-full">

@@ -6,7 +6,7 @@ export function Footer() {
       <div className="container flex items-center justify-center gap-3 py-3 text-sm text-muted-foreground">
         <img src={fastpasteLogo} alt="FastPaste" className="h-6 w-auto" />
         <span>Developed by</span>
-        <span className="font-semibold text-foreground">TRION SOLUTION PVT LTD</span>
+        <span className="font-semibold text-foreground">TRIONE SOLUTIONS PVT LTD</span>
         <span>by</span>
         <span className="font-medium text-primary">ASUREDDY</span>
       </div>
