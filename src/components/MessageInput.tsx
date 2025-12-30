@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Send, Code, Type, RotateCcw, X, Paperclip, Image, FileText, Loader2 } from 'lucide-react';
+import { Send, Code, Type, RotateCcw, X, Paperclip, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
@@ -188,81 +188,89 @@ export function MessageInput({ onSend, onSendFile, onTypingChange }: MessageInpu
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-border bg-card/90 backdrop-blur-sm p-4">
-      {failedMessage && (
-        <div className="mb-3 flex items-center gap-2 rounded-md bg-destructive/10 p-2 text-sm text-destructive">
-          <span className="flex-1">Message failed to send</span>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={handleRetry}
-            disabled={sending}
-            className="h-7 gap-1 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-          >
-            <RotateCcw className="h-3 w-3" />
-            Retry
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={dismissFailed}
-            className="h-7 w-7 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-          >
-            <X className="h-3 w-3" />
-          </Button>
-        </div>
-      )}
-      <div className="flex items-end gap-2">
-        <div className="flex flex-col gap-2">
-          <Toggle
-            pressed={isCodeMode}
-            onPressedChange={setIsCodeMode}
-            aria-label="Toggle code mode"
-            className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-          >
-            {isCodeMode ? <Code className="h-4 w-4" /> : <Type className="h-4 w-4" />}
-          </Toggle>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={ALLOWED_FILE_TYPES.join(',')}
-            onChange={handleFileSelect}
-            className="hidden"
+    <form onSubmit={handleSubmit} className="border-t border-border bg-card/90 backdrop-blur-sm p-2 sm:p-3 md:p-4">
+      <div className="mx-auto w-full max-w-4xl">
+        {failedMessage && (
+          <div className="mb-2 sm:mb-3 flex items-center gap-2 rounded-md bg-destructive/10 p-2 text-sm text-destructive">
+            <span className="flex-1 text-xs sm:text-sm">Message failed to send</span>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleRetry}
+              disabled={sending}
+              className="h-7 gap-1 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span className="hidden sm:inline">Retry</span>
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={dismissFailed}
+              className="h-7 w-7 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+        <div className="flex items-end gap-1.5 sm:gap-2">
+          <div className="flex flex-row sm:flex-col gap-1 sm:gap-2">
+            <Toggle
+              pressed={isCodeMode}
+              onPressedChange={setIsCodeMode}
+              aria-label="Toggle code mode"
+              className="h-9 w-9 sm:h-10 sm:w-10 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            >
+              {isCodeMode ? <Code className="h-4 w-4" /> : <Type className="h-4 w-4" />}
+            </Toggle>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ALLOWED_FILE_TYPES.join(',')}
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingFile}
+              title="Attach file"
+              className="h-9 w-9 sm:h-10 sm:w-10"
+            >
+              {uploadingFile ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Paperclip className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          <Textarea
+            value={content}
+            onChange={(e) => handleContentChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={isCodeMode ? 'Paste your code here...' : 'Type a message...'}
+            className={`min-h-[40px] sm:min-h-[44px] flex-1 resize-none text-sm sm:text-base ${isCodeMode ? 'font-mono' : ''}`}
+            rows={isCodeMode ? 4 : 1}
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingFile}
-            title="Attach file"
+          <Button 
+            type="submit" 
+            size="icon" 
+            disabled={!content.trim() || sending}
+            className="h-9 w-9 sm:h-10 sm:w-10"
           >
-            {uploadingFile ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Paperclip className="h-4 w-4" />
-            )}
+            <Send className="h-4 w-4" />
           </Button>
         </div>
-        <Textarea
-          value={content}
-          onChange={(e) => handleContentChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={isCodeMode ? 'Paste your code here...' : 'Type a message...'}
-          className={`min-h-[44px] flex-1 resize-none ${isCodeMode ? 'font-mono' : ''}`}
-          rows={isCodeMode ? 4 : 1}
-        />
-        <Button type="submit" size="icon" disabled={!content.trim() || sending}>
-          <Send className="h-4 w-4" />
-        </Button>
+        <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-muted-foreground text-center sm:text-left">
+          {isCodeMode 
+            ? 'Code mode: Your message will be formatted as a code block' 
+            : 'Press Enter to send, Shift+Enter for new line'}
+        </p>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        {isCodeMode 
-          ? 'Code mode: Your message will be formatted as a code block' 
-          : 'Text mode: Press Enter to send, Shift+Enter for new line. Use 📎 to attach files.'}
-      </p>
     </form>
   );
 }

@@ -42,29 +42,34 @@ export function MessageList({
 
   if (messages.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center text-muted-foreground">
+      <div className="flex flex-1 items-center justify-center px-4 text-center text-muted-foreground">
         <p>No messages yet. Start the conversation!</p>
       </div>
     );
   }
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-y-auto p-4">
-      {messages.map((message, index) => {
-        const isLastOwnMessage = 
-          message.username === currentUsername && 
-          messages.slice(index + 1).every(m => m.username !== currentUsername);
-        
-        return (
-          <MessageBubble 
-            key={message.id} 
-            message={message} 
-            isOwn={message.username === currentUsername}
-            seenBy={isLastOwnMessage && getSeenBy ? getSeenBy(message.id) : undefined}
-          />
-        );
-      })}
-      <div ref={bottomRef} />
+    <div 
+      ref={containerRef} 
+      className="flex-1 overflow-y-auto px-2 py-3 sm:px-4 sm:py-4 md:px-6"
+    >
+      <div className="mx-auto w-full max-w-4xl">
+        {messages.map((message, index) => {
+          const isLastOwnMessage = 
+            message.username === currentUsername && 
+            messages.slice(index + 1).every(m => m.username !== currentUsername);
+          
+          return (
+            <MessageBubble 
+              key={message.id} 
+              message={message} 
+              isOwn={message.username === currentUsername}
+              seenBy={isLastOwnMessage && getSeenBy ? getSeenBy(message.id) : undefined}
+            />
+          );
+        })}
+        <div ref={bottomRef} />
+      </div>
     </div>
   );
 }

@@ -37,26 +37,31 @@ export function GroupHeader({
   };
 
   return (
-    <header className="flex items-center justify-between border-b border-border bg-card/90 backdrop-blur-sm px-4 py-3">
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-muted-foreground">Group:</span>
-        <code className="rounded bg-muted px-3 py-1.5 font-mono text-lg font-semibold text-foreground">
-          {code}
-        </code>
-        <Button variant="ghost" size="icon" onClick={copyCode}>
-          <Copy className="h-4 w-4" />
-        </Button>
-        <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1">
+    <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card/90 backdrop-blur-sm px-3 py-2 md:px-4 md:py-3">
+      {/* Left section - Group code and online count */}
+      <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-1.5 md:gap-2">
+          <span className="hidden sm:inline text-sm text-muted-foreground">Group:</span>
+          <code className="rounded bg-muted px-2 py-1 md:px-3 md:py-1.5 font-mono text-sm md:text-lg font-semibold text-foreground">
+            {code}
+          </code>
+          <Button variant="ghost" size="icon" onClick={copyCode} className="h-8 w-8 md:h-9 md:w-9">
+            <Copy className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          </Button>
+        </div>
+        <div className="flex items-center gap-1 md:gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 md:px-3 md:py-1">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
             <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
           </span>
-          <Users className="h-3.5 w-3.5 text-primary" />
-          <span className="text-sm font-medium text-primary">{onlineCount}</span>
+          <Users className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary" />
+          <span className="text-xs md:text-sm font-medium text-primary">{onlineCount}</span>
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-muted-foreground">
+      
+      {/* Right section - Username, settings, and leave */}
+      <div className="flex items-center gap-1.5 md:gap-3">
+        <span className="hidden md:inline text-sm text-muted-foreground">
           Hi, <span className="font-medium text-foreground">{username}</span>
         </span>
         <BackgroundSelector 
@@ -67,9 +72,14 @@ export function GroupHeader({
           onRemoveCustom={onRemoveCustomBackground}
         />
         <ThemeToggle />
-        <Button variant="ghost" size="sm" onClick={onLeave} className="text-muted-foreground hover:text-foreground">
-          <LogOut className="mr-2 h-4 w-4" />
-          Leave
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={onLeave} 
+          className="h-8 px-2 md:px-3 text-muted-foreground hover:text-foreground"
+        >
+          <LogOut className="h-4 w-4 md:mr-2" />
+          <span className="hidden md:inline">Leave</span>
         </Button>
       </div>
     </header>
