@@ -10,30 +10,39 @@ import { Button } from '@/components/ui/button';
 import { Sparkles, Bot, Code, MessageCircle } from 'lucide-react';
 import fastpasteLogo from '@/assets/fastpaste-logo.png';
 
-const WELCOME_SHOWN_KEY = 'fastpaste-welcome-shown-v2';
-const CHAT_ROOM_SHOWN_KEY = 'fastpaste-chatroom-welcome-shown';
-
 interface WelcomeDialogProps {
   inChatRoom?: boolean;
+  roomCode?: string;
 }
 
-export function WelcomeDialog({ inChatRoom = false }: WelcomeDialogProps) {
+export function WelcomeDialog({ inChatRoom = false, roomCode }: WelcomeDialogProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const storageKey = inChatRoom ? CHAT_ROOM_SHOWN_KEY : WELCOME_SHOWN_KEY;
-      const hasShown = localStorage.getItem(storageKey);
-      if (!hasShown) {
+      if (inChatRoom && roomCode) {
+        // For chat room: show once per room
+        const shownRooms = JSON.parse(localStorage.getItem('fastpaste-chatroom-shown-rooms') || '[]');
+        if (!shownRooms.includes(roomCode)) {
+          setOpen(true);
+        }
+      } else {
+        // Company dialog: show every visit
         setOpen(true);
       }
     }, 100);
     return () => clearTimeout(timer);
-  }, [inChatRoom]);
+  }, [inChatRoom, roomCode]);
 
   const handleClose = () => {
-    const storageKey = inChatRoom ? CHAT_ROOM_SHOWN_KEY : WELCOME_SHOWN_KEY;
-    localStorage.setItem(storageKey, 'true');
+    if (inChatRoom && roomCode) {
+      // Mark this room as shown
+      const shownRooms = JSON.parse(localStorage.getItem('fastpaste-chatroom-shown-rooms') || '[]');
+      if (!shownRooms.includes(roomCode)) {
+        shownRooms.push(roomCode);
+        localStorage.setItem('fastpaste-chatroom-shown-rooms', JSON.stringify(shownRooms));
+      }
+    }
     setOpen(false);
   };
 
