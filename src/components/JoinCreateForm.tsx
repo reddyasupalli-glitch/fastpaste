@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Plus, LogIn, History, Trash2, Clock, UserPlus, Crown } from 'lucide-react';
-import { getGroupHistory, removeFromGroupHistory, GroupHistoryItem } from '@/lib/groupHistory';
+import { Plus, LogIn, History, Trash2, Clock, UserPlus, Crown, Pencil, Check, X } from 'lucide-react';
+import { getGroupHistory, removeFromGroupHistory, updateGroupName, GroupHistoryItem } from '@/lib/groupHistory';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface JoinCreateFormProps {
@@ -17,6 +17,8 @@ interface JoinCreateFormProps {
 export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateFormProps) {
   const [joinCode, setJoinCode] = useState('');
   const [history, setHistory] = useState<GroupHistoryItem[]>([]);
+  const [editingCode, setEditingCode] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
 
   useEffect(() => {
     setHistory(getGroupHistory());
@@ -37,6 +39,26 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
     e.stopPropagation();
     removeFromGroupHistory(code);
     setHistory(getGroupHistory());
+  };
+
+  const startEditing = (code: string, currentName: string | undefined, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingCode(code);
+    setEditName(currentName || '');
+  };
+
+  const saveEdit = (code: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    updateGroupName(code, editName);
+    setHistory(getGroupHistory());
+    setEditingCode(null);
+    setEditName('');
+  };
+
+  const cancelEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingCode(null);
+    setEditName('');
   };
 
   const formatTimeAgo = (dateString: string) => {
@@ -127,11 +149,11 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
                     className="group flex items-center justify-between rounded-lg border border-border bg-muted/50 p-3 transition-colors hover:bg-muted"
                   >
                     <button
-                      onClick={() => handleRejoin(item.code)}
-                      disabled={loading}
+                      onClick={() => editingCode !== item.code && handleRejoin(item.code)}
+                      disabled={loading || editingCode === item.code}
                       className="flex flex-1 items-center gap-3 text-left"
                     >
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                         item.type === 'created' 
                           ? 'bg-primary/10 text-primary' 
                           : 'bg-secondary text-muted-foreground'
@@ -142,26 +164,90 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
                           <UserPlus className="h-4 w-4" />
                         )}
                       </div>
-                      <div className="flex flex-col">
-                        <code className="font-mono text-sm font-semibold">
-                          {item.code}
-                        </code>
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {formatTimeAgo(item.joinedAt)}
-                          <span className="mx-1">•</span>
-                          {item.type === 'created' ? 'Created' : 'Joined'}
-                        </span>
+                      <div className="flex min-w-0 flex-col">
+                        {editingCode === item.code ? (
+                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <Input
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              placeholder="Enter nickname..."
+                              className="h-7 text-sm"
+                              maxLength={30}
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  saveEdit(item.code, e as unknown as React.MouseEvent);
+                                } else if (e.key === 'Escape') {
+                                  cancelEdit(e as unknown as React.MouseEvent);
+                                }
+                              }}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => saveEdit(item.code, e)}
+                              className="h-7 w-7 shrink-0"
+                            >
+                              <Check className="h-3 w-3 text-green-500" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={cancelEdit}
+                              className="h-7 w-7 shrink-0"
+                            >
+                              <X className="h-3 w-3 text-muted-foreground" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2">
+                              {item.customName ? (
+                                <>
+                                  <span className="truncate font-medium text-foreground">
+                                    {item.customName}
+                                  </span>
+                                  <code className="shrink-0 font-mono text-xs text-muted-foreground">
+                                    {item.code}
+                                  </code>
+                                </>
+                              ) : (
+                                <code className="font-mono text-sm font-semibold">
+                                  {item.code}
+                                </code>
+                              )}
+                            </div>
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              {formatTimeAgo(item.joinedAt)}
+                              <span className="mx-1">•</span>
+                              {item.type === 'created' ? 'Created' : 'Joined'}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => handleRemoveFromHistory(item.code, e)}
-                      className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                    </Button>
+                    {editingCode !== item.code && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => startEditing(item.code, item.customName, e)}
+                          className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
+                        >
+                          <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => handleRemoveFromHistory(item.code, e)}
+                          className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
+                        >
+                          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
