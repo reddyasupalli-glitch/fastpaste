@@ -82,7 +82,7 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
       </div>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold">CodeSender</CardTitle>
+          <CardTitle className="text-3xl font-bold">FastPaste</CardTitle>
           <CardDescription>
             Share code snippets and messages in real-time
           </CardDescription>
