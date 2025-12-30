@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
+const AI_NAME = 'Asu';
+const AI_TRIGGER_PATTERNS = [/@Asu\s+/i, /\/Asu\s+/i];
+
 export interface Message {
   id: string;
   group_id: string;
@@ -39,6 +42,86 @@ export function useMessages(groupId: string | null, username: string | null) {
     }
     setLoading(false);
   }, [groupId]);
+
+  const checkForAITrigger = (content: string): { isAIMessage: boolean; question: string } => {
+    for (const pattern of AI_TRIGGER_PATTERNS) {
+      if (pattern.test(content)) {
+        const question = content.replace(pattern, '').trim();
+        return { isAIMessage: true, question };
+      }
+    }
+    return { isAIMessage: false, question: '' };
+  };
+
+  const getAIResponse = async (question: string, conversationContext: Message[]): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('chat-ai', {
+        body: { 
+          message: question,
+          conversationContext: conversationContext.slice(-10).map(m => ({
+            username: m.username,
+            content: m.content
+          }))
+        }
+      });
+
+      if (error) {
+        console.error('AI function error:', error);
+        return null;
+      }
+
+      return data?.response || null;
+    } catch (err) {
+      console.error('Error getting AI response:', err);
+      return null;
+    }
+  };
+
+  const sendAIMessage = async (content: string): Promise<boolean> => {
+    if (!groupId) return false;
+
+    const optimisticId = `temp-ai-${Date.now()}`;
+    const optimisticMessage: Message = {
+      id: optimisticId,
+      group_id: groupId,
+      content: content,
+      message_type: 'text',
+      username: AI_NAME,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          group_id: groupId,
+          content: content,
+          message_type: 'text',
+          username: AI_NAME,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error sending AI message:', error);
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+        return false;
+      }
+
+      if (data) {
+        setMessages((prev) =>
+          prev.map((m) => m.id === optimisticId ? (data as Message) : m)
+        );
+      }
+      return true;
+    } catch (err) {
+      console.error('Error sending AI message:', err);
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      return false;
+    }
+  };
 
   const sendMessage = async (content: string, messageType: 'text' | 'code'): Promise<boolean> => {
     if (!groupId || !content.trim() || !username) return false;
@@ -82,6 +165,24 @@ export function useMessages(groupId: string | null, username: string | null) {
           prev.map((m) => m.id === optimisticId ? (data as Message) : m)
         );
       }
+
+      // Check if message triggers AI response
+      const { isAIMessage, question } = checkForAITrigger(content.trim());
+      if (isAIMessage && question) {
+        // Get current messages for context
+        const currentMessages = await new Promise<Message[]>((resolve) => {
+          setMessages((prev) => {
+            resolve(prev);
+            return prev;
+          });
+        });
+
+        const aiResponse = await getAIResponse(question, currentMessages);
+        if (aiResponse) {
+          await sendAIMessage(aiResponse);
+        }
+      }
+
       return true;
     } catch (err) {
       console.error('Error sending message:', err);
