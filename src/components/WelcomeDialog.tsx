@@ -7,9 +7,11 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Bot, Code, MessageCircle } from 'lucide-react';
+import { Sparkles, Bot, Code, MessageCircle, Instagram } from 'lucide-react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import fastpasteLogo from '@/assets/fastpaste-logo.png';
+
+const INSTAGRAM_URL = 'https://www.instagram.com/trione.solutions?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==';
 
 interface WelcomeDialogProps {
   inChatRoom?: boolean;
@@ -259,6 +261,20 @@ export function WelcomeDialog({ inChatRoom = false, roomCode }: WelcomeDialogPro
                 >
                   by ASUREDDY
                 </motion.p>
+                <motion.a
+                  href={INSTAGRAM_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 px-4 py-1.5 text-white"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.7 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Instagram className="h-4 w-4" />
+                  <span className="text-sm font-medium">Follow us</span>
+                </motion.a>
               </motion.div>
               
               <motion.div
