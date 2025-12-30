@@ -5,9 +5,10 @@ import type { Message } from '@/hooks/useMessages';
 interface MessageListProps {
   messages: Message[];
   loading: boolean;
+  currentUsername: string;
 }
 
-export function MessageList({ messages, loading }: MessageListProps) {
+export function MessageList({ messages, loading, currentUsername }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,7 +34,11 @@ export function MessageList({ messages, loading }: MessageListProps) {
   return (
     <div className="flex-1 overflow-y-auto p-4">
       {messages.map((message) => (
-        <MessageBubble key={message.id} message={message} />
+        <MessageBubble 
+          key={message.id} 
+          message={message} 
+          isOwn={message.username === currentUsername} 
+        />
       ))}
       <div ref={bottomRef} />
     </div>

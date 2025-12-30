@@ -42,6 +42,7 @@ export type Database = {
           group_id: string
           id: string
           message_type: string
+          username: string
         }
         Insert: {
           content: string
@@ -49,6 +50,7 @@ export type Database = {
           group_id: string
           id?: string
           message_type?: string
+          username?: string
         }
         Update: {
           content?: string
@@ -56,6 +58,7 @@ export type Database = {
           group_id?: string
           id?: string
           message_type?: string
+          username?: string
         }
         Relationships: [
           {

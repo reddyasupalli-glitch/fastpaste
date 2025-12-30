@@ -7,9 +7,10 @@ interface GroupHeaderProps {
   code: string;
   onLeave: () => void;
   onlineCount: number;
+  username: string;
 }
 
-export function GroupHeader({ code, onLeave, onlineCount }: GroupHeaderProps) {
+export function GroupHeader({ code, onLeave, onlineCount, username }: GroupHeaderProps) {
   const copyCode = () => {
     navigator.clipboard.writeText(code);
     toast({
@@ -37,7 +38,10 @@ export function GroupHeader({ code, onLeave, onlineCount }: GroupHeaderProps) {
           <span className="text-sm font-medium text-primary">{onlineCount}</span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-muted-foreground">
+          Hi, <span className="font-medium text-foreground">{username}</span>
+        </span>
         <ThemeToggle />
         <Button variant="ghost" size="sm" onClick={onLeave} className="text-muted-foreground hover:text-foreground">
           <LogOut className="mr-2 h-4 w-4" />
