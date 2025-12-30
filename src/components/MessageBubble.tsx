@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Highlight, themes } from 'prism-react-renderer';
 import type { Message } from '@/hooks/useMessages';
 import { cn } from '@/lib/utils';
+import { MessageReactions } from './MessageReactions';
+import type { ReactionGroup } from '@/hooks/useReactions';
 
 const AI_NAME = 'Asu';
 
@@ -11,9 +13,11 @@ interface MessageBubbleProps {
   message: Message;
   isOwn: boolean;
   seenBy?: string[];
+  reactions?: ReactionGroup[];
+  onToggleReaction?: (emoji: string) => void;
 }
 
-export function MessageBubble({ message, isOwn, seenBy = [] }: MessageBubbleProps) {
+export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onToggleReaction }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -78,7 +82,7 @@ export function MessageBubble({ message, isOwn, seenBy = [] }: MessageBubbleProp
   // File message
   if (message.message_type === 'file' && message.file_url) {
     return (
-      <div className={cn("my-1.5 sm:my-2 max-w-[90%] sm:max-w-[80%] flex gap-2", isOwn && "ml-auto flex-row-reverse")}>
+      <div className={cn("group my-1.5 sm:my-2 max-w-[90%] sm:max-w-[80%] flex gap-2", isOwn && "ml-auto flex-row-reverse")}>
         {renderAvatar()}
         <div className="flex-1 min-w-0">
           <div className="mb-1">
@@ -129,11 +133,14 @@ export function MessageBubble({ message, isOwn, seenBy = [] }: MessageBubbleProp
               </div>
             )}
           </div>
-          <div className="mt-1">
+          <div className="mt-1 flex items-center justify-between">
             <time className="text-[10px] sm:text-xs text-muted-foreground">
               {new Date(message.created_at).toLocaleTimeString()}
             </time>
           </div>
+          {onToggleReaction && (
+            <MessageReactions reactions={reactions} onToggleReaction={onToggleReaction} isOwn={isOwn} />
+          )}
           {renderSeenBy()}
         </div>
       </div>
@@ -205,6 +212,9 @@ export function MessageBubble({ message, isOwn, seenBy = [] }: MessageBubbleProp
               {new Date(message.created_at).toLocaleTimeString()}
             </time>
           </div>
+          {onToggleReaction && (
+            <MessageReactions reactions={reactions} onToggleReaction={onToggleReaction} isOwn={isOwn} />
+          )}
           {renderSeenBy()}
         </div>
       </div>
@@ -213,7 +223,7 @@ export function MessageBubble({ message, isOwn, seenBy = [] }: MessageBubbleProp
 
   // Text message
   return (
-    <div className={cn("my-1.5 sm:my-2 max-w-[90%] sm:max-w-[80%] flex gap-2", isOwn && "ml-auto flex-row-reverse")}>
+    <div className={cn("group my-1.5 sm:my-2 max-w-[90%] sm:max-w-[80%] flex gap-2", isOwn && "ml-auto flex-row-reverse")}>
       {renderAvatar()}
       <div className="flex-1 min-w-0">
         <div className="mb-1">
@@ -236,6 +246,9 @@ export function MessageBubble({ message, isOwn, seenBy = [] }: MessageBubbleProp
             {new Date(message.created_at).toLocaleTimeString()}
           </time>
         </div>
+        {onToggleReaction && (
+          <MessageReactions reactions={reactions} onToggleReaction={onToggleReaction} isOwn={isOwn} />
+        )}
         {renderSeenBy()}
       </div>
     </div>
