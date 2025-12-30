@@ -18,7 +18,7 @@ interface ChatRoomProps {
 
 export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
   const { username, setUsername, hasUsername } = useUsername();
-  const { messages, loading, sendMessage, sendFileMessage } = useMessages(groupId, username);
+  const { messages, loading, isAIThinking, sendMessage, sendFileMessage } = useMessages(groupId, username);
   const { onlineCount, typingUsers, setTyping, markMessageSeen, getSeenBy } = usePresence(groupId, username);
   const { 
     backgroundId, 
@@ -71,7 +71,7 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
           onMessageSeen={markMessageSeen}
           getSeenBy={handleGetSeenBy}
         />
-        <TypingIndicator typingUsers={typingUsers} />
+        <TypingIndicator typingUsers={typingUsers} isAIThinking={isAIThinking} />
         <MessageInput 
           onSend={sendMessage} 
           onSendFile={sendFileMessage}

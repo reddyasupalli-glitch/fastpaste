@@ -20,6 +20,7 @@ export interface Message {
 export function useMessages(groupId: string | null, username: string | null) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isAIThinking, setIsAIThinking] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const isSubscribedRef = useRef(false);
 
@@ -169,17 +170,22 @@ export function useMessages(groupId: string | null, username: string | null) {
       // Check if message triggers AI response
       const { isAIMessage, question } = checkForAITrigger(content.trim());
       if (isAIMessage && question) {
-        // Get current messages for context
-        const currentMessages = await new Promise<Message[]>((resolve) => {
-          setMessages((prev) => {
-            resolve(prev);
-            return prev;
+        setIsAIThinking(true);
+        try {
+          // Get current messages for context
+          const currentMessages = await new Promise<Message[]>((resolve) => {
+            setMessages((prev) => {
+              resolve(prev);
+              return prev;
+            });
           });
-        });
 
-        const aiResponse = await getAIResponse(question, currentMessages);
-        if (aiResponse) {
-          await sendAIMessage(aiResponse);
+          const aiResponse = await getAIResponse(question, currentMessages);
+          if (aiResponse) {
+            await sendAIMessage(aiResponse);
+          }
+        } finally {
+          setIsAIThinking(false);
         }
       }
 
@@ -385,6 +391,7 @@ export function useMessages(groupId: string | null, username: string | null) {
   return {
     messages,
     loading,
+    isAIThinking,
     sendMessage,
     sendFileMessage,
     refetch: fetchMessages,
