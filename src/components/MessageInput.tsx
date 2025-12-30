@@ -1,8 +1,14 @@
 import { useState } from 'react';
-import { Send, Code, Type } from 'lucide-react';
+import { Send, Code, Type, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
+import { toast } from '@/hooks/use-toast';
+
+interface FailedMessage {
+  content: string;
+  type: 'text' | 'code';
+}
 
 interface MessageInputProps {
   onSend: (content: string, type: 'text' | 'code') => Promise<boolean>;
@@ -12,17 +18,56 @@ export function MessageInput({ onSend }: MessageInputProps) {
   const [content, setContent] = useState('');
   const [isCodeMode, setIsCodeMode] = useState(false);
   const [sending, setSending] = useState(false);
+  const [failedMessage, setFailedMessage] = useState<FailedMessage | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim() || sending) return;
 
     setSending(true);
-    const success = await onSend(content, isCodeMode ? 'code' : 'text');
+    const messageContent = content;
+    const messageType = isCodeMode ? 'code' : 'text';
+    
+    const success = await onSend(messageContent, messageType);
     if (success) {
       setContent('');
+      setFailedMessage(null);
+    } else {
+      setFailedMessage({ content: messageContent, type: messageType });
+      toast({
+        title: 'Failed to send message',
+        description: 'Click retry to try again',
+        variant: 'destructive',
+      });
     }
     setSending(false);
+  };
+
+  const handleRetry = async () => {
+    if (!failedMessage || sending) return;
+    
+    setSending(true);
+    const success = await onSend(failedMessage.content, failedMessage.type);
+    if (success) {
+      setContent('');
+      setFailedMessage(null);
+      toast({
+        title: 'Message sent',
+        description: 'Your message was sent successfully',
+      });
+    } else {
+      toast({
+        title: 'Still failing',
+        description: 'Please check your connection and try again',
+        variant: 'destructive',
+      });
+    }
+    setSending(false);
+  };
+
+  const dismissFailed = () => {
+    setFailedMessage(null);
+    setContent('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -34,6 +79,31 @@ export function MessageInput({ onSend }: MessageInputProps) {
 
   return (
     <form onSubmit={handleSubmit} className="border-t border-border bg-card p-4">
+      {failedMessage && (
+        <div className="mb-3 flex items-center gap-2 rounded-md bg-destructive/10 p-2 text-sm text-destructive">
+          <span className="flex-1">Message failed to send</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={handleRetry}
+            disabled={sending}
+            className="h-7 gap-1 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Retry
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={dismissFailed}
+            className="h-7 w-7 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
       <div className="flex items-end gap-2">
         <div className="flex flex-col gap-2">
           <Toggle
