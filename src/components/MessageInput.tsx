@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Send, Code, Type, RotateCcw, X } from 'lucide-react';
+import { Send, Code, Type, RotateCcw, X, Paperclip, Image, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
@@ -12,16 +12,37 @@ interface FailedMessage {
 
 interface MessageInputProps {
   onSend: (content: string, type: 'text' | 'code') => Promise<boolean>;
+  onSendFile?: (file: File) => Promise<boolean>;
   onTypingChange?: (isTyping: boolean) => void;
 }
 
-export function MessageInput({ onSend, onTypingChange }: MessageInputProps) {
+const ALLOWED_FILE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+  'text/plain',
+  'application/json',
+  'application/javascript',
+  'text/javascript',
+  'text/css',
+  'text/html',
+  'application/zip',
+  'application/x-zip-compressed',
+];
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+export function MessageInput({ onSend, onSendFile, onTypingChange }: MessageInputProps) {
   const [content, setContent] = useState('');
   const [isCodeMode, setIsCodeMode] = useState(false);
   const [sending, setSending] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [failedMessage, setFailedMessage] = useState<FailedMessage | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const setTyping = useCallback((typing: boolean) => {
     if (isTypingRef.current !== typing) {
@@ -36,12 +57,10 @@ export function MessageInput({ onSend, onTypingChange }: MessageInputProps) {
     if (value.trim()) {
       setTyping(true);
       
-      // Clear existing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
       
-      // Stop typing after 2 seconds of inactivity
       typingTimeoutRef.current = setTimeout(() => {
         setTyping(false);
       }, 2000);
@@ -85,6 +104,53 @@ export function MessageInput({ onSend, onTypingChange }: MessageInputProps) {
       });
     }
     setSending(false);
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onSendFile) return;
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    // Validate file type
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please upload an image, PDF, or text file',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: 'File too large',
+        description: 'Maximum file size is 10MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadingFile(true);
+    const success = await onSendFile(file);
+    
+    if (success) {
+      toast({
+        title: 'File sent',
+        description: `${file.name} has been shared`,
+      });
+    } else {
+      toast({
+        title: 'Failed to send file',
+        description: 'Please try again',
+        variant: 'destructive',
+      });
+    }
+    setUploadingFile(false);
   };
 
   const handleRetry = async () => {
@@ -158,6 +224,27 @@ export function MessageInput({ onSend, onTypingChange }: MessageInputProps) {
           >
             {isCodeMode ? <Code className="h-4 w-4" /> : <Type className="h-4 w-4" />}
           </Toggle>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ALLOWED_FILE_TYPES.join(',')}
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingFile}
+            title="Attach file"
+          >
+            {uploadingFile ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Paperclip className="h-4 w-4" />
+            )}
+          </Button>
         </div>
         <Textarea
           value={content}
@@ -172,7 +259,9 @@ export function MessageInput({ onSend, onTypingChange }: MessageInputProps) {
         </Button>
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
-        {isCodeMode ? 'Code mode: Your message will be formatted as a code block' : 'Text mode: Press Enter to send, Shift+Enter for new line'}
+        {isCodeMode 
+          ? 'Code mode: Your message will be formatted as a code block' 
+          : 'Text mode: Press Enter to send, Shift+Enter for new line. Use 📎 to attach files.'}
       </p>
     </form>
   );

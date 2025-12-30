@@ -5,9 +5,12 @@ export interface Message {
   id: string;
   group_id: string;
   content: string;
-  message_type: 'text' | 'code';
+  message_type: 'text' | 'code' | 'file';
   username: string;
   created_at: string;
+  file_url?: string | null;
+  file_name?: string | null;
+  file_type?: string | null;
 }
 
 export function useMessages(groupId: string | null, username: string | null) {
@@ -85,6 +88,84 @@ export function useMessages(groupId: string | null, username: string | null) {
     }
   };
 
+  const sendFileMessage = async (file: File): Promise<boolean> => {
+    if (!groupId || !username) return false;
+
+    const maxSize = 10 * 1024 * 1024; // 10MB limit
+    if (file.size > maxSize) {
+      console.error('File too large');
+      return false;
+    }
+
+    // Create optimistic message
+    const optimisticId = `temp-${Date.now()}`;
+    const optimisticMessage: Message = {
+      id: optimisticId,
+      group_id: groupId,
+      content: `Uploading ${file.name}...`,
+      message_type: 'file',
+      username: username,
+      created_at: new Date().toISOString(),
+      file_name: file.name,
+      file_type: file.type,
+    };
+    
+    setMessages((prev) => [...prev, optimisticMessage]);
+
+    try {
+      // Upload file to storage
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${groupId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('chat-files')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Error uploading file:', uploadError);
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+        return false;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('chat-files')
+        .getPublicUrl(filePath);
+
+      // Insert message with file info
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          group_id: groupId,
+          content: file.name,
+          message_type: 'file',
+          username: username,
+          file_url: urlData.publicUrl,
+          file_name: file.name,
+          file_type: file.type,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error sending file message:', error);
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+        return false;
+      }
+
+      if (data) {
+        setMessages((prev) => 
+          prev.map((m) => m.id === optimisticId ? (data as Message) : m)
+        );
+      }
+      return true;
+    } catch (err) {
+      console.error('Error sending file:', err);
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      return false;
+    }
+  };
+
   // Fetch messages on mount and when groupId changes
   useEffect(() => {
     fetchMessages();
@@ -138,6 +219,7 @@ export function useMessages(groupId: string | null, username: string | null) {
     messages,
     loading,
     sendMessage,
+    sendFileMessage,
     refetch: fetchMessages,
   };
 }
