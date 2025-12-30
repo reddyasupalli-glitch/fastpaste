@@ -6,9 +6,10 @@ import type { Message } from '@/hooks/useMessages';
 
 interface MessageBubbleProps {
   message: Message;
+  isOwn: boolean;
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
 
   const copyCode = () => {
@@ -19,7 +20,12 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
   if (message.message_type === 'code') {
     return (
-      <div className="group relative my-2 max-w-full">
+      <div className={`group relative my-2 max-w-full ${isOwn ? 'ml-auto' : ''}`}>
+        <div className="mb-1 flex items-center gap-2">
+          <span className={`text-xs font-medium ${isOwn ? 'text-primary' : 'text-muted-foreground'}`}>
+            {isOwn ? 'You' : message.username}
+          </span>
+        </div>
         <div className="overflow-hidden rounded-lg border border-border">
           <div className="flex items-center justify-between border-b border-border bg-secondary/50 px-3 py-1.5">
             <span className="text-xs font-medium text-muted-foreground">Code</span>
@@ -74,9 +80,14 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   }
 
   return (
-    <div className="my-2 max-w-[80%]">
-      <div className="rounded-lg bg-secondary px-4 py-2.5">
-        <p className="whitespace-pre-wrap break-words text-foreground">{message.content}</p>
+    <div className={`my-2 max-w-[80%] ${isOwn ? 'ml-auto' : ''}`}>
+      <div className="mb-1">
+        <span className={`text-xs font-medium ${isOwn ? 'text-primary' : 'text-muted-foreground'}`}>
+          {isOwn ? 'You' : message.username}
+        </span>
+      </div>
+      <div className={`rounded-lg px-4 py-2.5 ${isOwn ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
+        <p className="whitespace-pre-wrap break-words">{message.content}</p>
       </div>
       <time className="mt-1 block text-xs text-muted-foreground">
         {new Date(message.created_at).toLocaleTimeString()}

@@ -6,10 +6,11 @@ export interface Message {
   group_id: string;
   content: string;
   message_type: 'text' | 'code';
+  username: string;
   created_at: string;
 }
 
-export function useMessages(groupId: string | null) {
+export function useMessages(groupId: string | null, username: string | null) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -34,7 +35,7 @@ export function useMessages(groupId: string | null) {
   }, [groupId]);
 
   const sendMessage = async (content: string, messageType: 'text' | 'code'): Promise<boolean> => {
-    if (!groupId || !content.trim()) return false;
+    if (!groupId || !content.trim() || !username) return false;
     
     // Create optimistic message
     const optimisticId = `temp-${Date.now()}`;
@@ -43,6 +44,7 @@ export function useMessages(groupId: string | null) {
       group_id: groupId,
       content: content.trim(),
       message_type: messageType,
+      username: username,
       created_at: new Date().toISOString(),
     };
     
@@ -56,6 +58,7 @@ export function useMessages(groupId: string | null) {
           group_id: groupId,
           content: content.trim(),
           message_type: messageType,
+          username: username,
         })
         .select()
         .single();
