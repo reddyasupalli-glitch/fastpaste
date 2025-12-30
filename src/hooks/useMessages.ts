@@ -3,7 +3,24 @@ import { supabase } from '@/integrations/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 const AI_NAME = 'Asu';
-const AI_TRIGGER_PATTERNS = [/@Asu\s+/i, /\/Asu\s+/i];
+const AI_TRIGGER_PATTERNS = [/@Asu\s*/i, /\/Asu\s*/i];
+const HELP_TRIGGERS = ['help', '?', 'commands'];
+
+const HELP_MESSAGE = `Hey there! I'm Asu, your AI assistant in this chat. Here's how you can interact with me:
+
+**How to ask me questions:**
+• Type \`@Asu\` followed by your question
+• Or use \`/Asu\` followed by your question
+
+**Examples:**
+• \`@Asu What's the weather like today?\`
+• \`/Asu Explain quantum computing\`
+• \`@Asu Tell me a joke\`
+
+**Commands:**
+• \`@Asu help\` - Show this help message
+
+I can help with answering questions, providing information, having conversations, and more. Just ask! 🤖`;
 
 export interface Message {
   id: string;
@@ -77,14 +94,17 @@ export function useMessages(groupId: string | null, username: string | null) {
     safeSetLoading(false);
   }, [groupId, safeSetLoading, safeSetMessages]);
 
-  const checkForAITrigger = (content: string): { isAIMessage: boolean; question: string } => {
+  const checkForAITrigger = (content: string): { isAIMessage: boolean; question: string; isHelp: boolean } => {
     for (const pattern of AI_TRIGGER_PATTERNS) {
       if (pattern.test(content)) {
         const question = content.replace(pattern, '').trim();
-        return { isAIMessage: true, question };
+        const isHelp = HELP_TRIGGERS.some(trigger => 
+          question.toLowerCase() === trigger || question === ''
+        );
+        return { isAIMessage: true, question, isHelp };
       }
     }
-    return { isAIMessage: false, question: '' };
+    return { isAIMessage: false, question: '', isHelp: false };
   };
 
   const getAIResponse = async (question: string, conversationContext: Message[]): Promise<string | null> => {
@@ -200,15 +220,20 @@ export function useMessages(groupId: string | null, username: string | null) {
       }
 
       // Check if message triggers AI response
-      const { isAIMessage, question } = checkForAITrigger(content.trim());
-      if (isAIMessage && question && isMountedRef.current) {
+      const { isAIMessage, question, isHelp } = checkForAITrigger(content.trim());
+      if (isAIMessage && isMountedRef.current) {
         safeSetIsAIThinking(true);
         try {
-          // Use messagesRef for context instead of setState trick
-          const currentMessages = messagesRef.current;
-          const aiResponse = await getAIResponse(question, currentMessages);
-          if (aiResponse && isMountedRef.current) {
-            await sendAIMessage(aiResponse);
+          if (isHelp) {
+            // Show help message without API call
+            await sendAIMessage(HELP_MESSAGE);
+          } else if (question) {
+            // Use messagesRef for context instead of setState trick
+            const currentMessages = messagesRef.current;
+            const aiResponse = await getAIResponse(question, currentMessages);
+            if (aiResponse && isMountedRef.current) {
+              await sendAIMessage(aiResponse);
+            }
           }
         } finally {
           safeSetIsAIThinking(false);
