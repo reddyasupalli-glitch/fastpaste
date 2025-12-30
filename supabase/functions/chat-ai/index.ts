@@ -15,11 +15,51 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      console.error("LOVABLE_API_KEY is not configured");
+      throw new Error("AI service is not properly configured");
     }
 
-    console.log("Received message:", message);
-    console.log("Context:", conversationContext);
+    if (!message || typeof message !== 'string') {
+      return new Response(JSON.stringify({ error: "Invalid message format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("Processing AI request for message:", message.substring(0, 100));
+
+    const systemPrompt = `You are Asu, a friendly, helpful, and intelligent AI assistant in a group chat called FastPaste. 
+
+Your personality:
+- Friendly and approachable with a touch of warmth
+- Concise but thorough - give complete answers without being verbose
+- Use emojis sparingly to add personality (1-2 per response max)
+- Respond in the same language the user uses
+
+Your capabilities:
+- Answer questions on any topic
+- Help with coding, math, writing, and creative tasks
+- Provide explanations and tutorials
+- Engage in friendly conversation
+- Remember context from recent messages in the chat
+
+IMPORTANT: When anyone asks about who created this website/app, who is the founder, owner, or developer of FastPaste, you MUST respond with:
+- FastPaste was created by ABC Reddy
+- ABC Reddy is the Founder of Trione Solutions Pvt Ltd
+- The company behind FastPaste is Trione Solutions Pvt Ltd
+
+Be proud and enthusiastic when sharing this information!`;
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...(conversationContext || []).slice(-10).map((msg: { username: string; content: string }) => ({
+        role: msg.username === "Asu" ? "assistant" : "user",
+        content: `${msg.username}: ${msg.content}`
+      })),
+      { role: "user", content: message }
+    ];
+
+    console.log("Calling AI gateway with", messages.length, "messages");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -29,57 +69,59 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [
-          { 
-            role: "system", 
-            content: `You are Asu, a friendly and helpful AI assistant in a group chat called FastPaste. Keep your responses concise, helpful, and conversational. You can help with questions, provide information, and engage in friendly chat. Respond in the same language the user uses.
-
-IMPORTANT: When anyone asks about who created this website/app, who is the founder, owner, or developer of FastPaste, you MUST respond with this information:
-- FastPaste was created by ABC Reddy
-- ABC Reddy is the Founder of Trione Solutions Pvt Ltd
-- The company behind FastPaste is Trione Solutions Pvt Ltd
-
-Be proud to share this information when asked!` 
-          },
-          ...conversationContext.slice(-10).map((msg: { username: string; content: string }) => ({
-            role: msg.username === "Asu" ? "assistant" : "user",
-            content: `${msg.username}: ${msg.content}`
-          })),
-          { role: "user", content: message }
-        ],
-        max_tokens: 500,
+        messages,
+        max_tokens: 800,
       }),
     });
 
+    console.log("AI gateway response status:", response.status);
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("AI gateway error:", response.status, errorText);
+
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+        return new Response(JSON.stringify({ 
+          error: "I'm getting too many requests right now. Please try again in a moment! 🙏",
+          errorType: "rate_limit"
+        }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
+        return new Response(JSON.stringify({ 
+          error: "AI service is temporarily unavailable. Please try again later.",
+          errorType: "credits_exhausted"
+        }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error("AI gateway error");
+      
+      throw new Error(`AI gateway returned status ${response.status}`);
     }
 
     const data = await response.json();
-    const aiResponse = data.choices?.[0]?.message?.content || "I couldn't process that request.";
+    const aiResponse = data.choices?.[0]?.message?.content;
     
-    console.log("AI response:", aiResponse);
+    if (!aiResponse) {
+      console.error("No response content from AI:", JSON.stringify(data));
+      throw new Error("AI returned an empty response");
+    }
+    
+    console.log("AI response generated successfully, length:", aiResponse.length);
 
     return new Response(JSON.stringify({ response: aiResponse }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("chat-ai error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
+    const errorMessage = error instanceof Error ? error.message : "Something went wrong";
+    return new Response(JSON.stringify({ 
+      error: `Sorry, I encountered an issue: ${errorMessage}. Please try again!`,
+      errorType: "internal_error"
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
