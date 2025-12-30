@@ -112,9 +112,11 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
           <form onSubmit={handleJoin} className="space-y-2 sm:space-y-3">
             <Input
               type="text"
-              placeholder="Enter 6-character code"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="Enter 6-digit code"
               value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
+              onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               className="text-center font-mono text-base sm:text-lg tracking-widest h-10 sm:h-11"
               maxLength={6}
             />
