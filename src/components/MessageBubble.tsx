@@ -1,21 +1,40 @@
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Highlight, themes } from 'prism-react-renderer';
 import type { Message } from '@/hooks/useMessages';
+import { cn } from '@/lib/utils';
 
 interface MessageBubbleProps {
   message: Message;
   isOwn: boolean;
+  seenBy?: string[];
 }
 
-export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
+export function MessageBubble({ message, isOwn, seenBy = [] }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
 
   const copyCode = () => {
     navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const renderSeenBy = () => {
+    if (!isOwn || seenBy.length === 0) return null;
+    
+    const seenText = seenBy.length === 1 
+      ? `Seen by ${seenBy[0]}`
+      : seenBy.length === 2
+        ? `Seen by ${seenBy[0]} and ${seenBy[1]}`
+        : `Seen by ${seenBy[0]} and ${seenBy.length - 1} others`;
+    
+    return (
+      <div className="mt-0.5 flex items-center justify-end gap-1 text-xs text-muted-foreground">
+        <CheckCheck className="h-3 w-3 text-primary" />
+        <span>{seenText}</span>
+      </div>
+    );
   };
 
   if (message.message_type === 'code') {
@@ -72,26 +91,35 @@ export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
             )}
           </Highlight>
         </div>
-        <time className="mt-1 block text-xs text-muted-foreground">
-          {new Date(message.created_at).toLocaleTimeString()}
-        </time>
+        <div className="mt-1 flex items-center justify-between">
+          <time className="text-xs text-muted-foreground">
+            {new Date(message.created_at).toLocaleTimeString()}
+          </time>
+        </div>
+        {renderSeenBy()}
       </div>
     );
   }
 
   return (
-    <div className={`my-2 max-w-[80%] ${isOwn ? 'ml-auto' : ''}`}>
+    <div className={cn("my-2 max-w-[80%]", isOwn && "ml-auto")}>
       <div className="mb-1">
         <span className={`text-xs font-medium ${isOwn ? 'text-primary' : 'text-muted-foreground'}`}>
           {isOwn ? 'You' : message.username}
         </span>
       </div>
-      <div className={`rounded-lg px-4 py-2.5 ${isOwn ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
+      <div className={cn(
+        "rounded-lg px-4 py-2.5",
+        isOwn ? "bg-primary text-primary-foreground" : "bg-secondary"
+      )}>
         <p className="whitespace-pre-wrap break-words">{message.content}</p>
       </div>
-      <time className="mt-1 block text-xs text-muted-foreground">
-        {new Date(message.created_at).toLocaleTimeString()}
-      </time>
+      <div className="mt-1">
+        <time className="text-xs text-muted-foreground">
+          {new Date(message.created_at).toLocaleTimeString()}
+        </time>
+      </div>
+      {renderSeenBy()}
     </div>
   );
 }
