@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { MessageBubble } from './MessageBubble';
 import type { Message } from '@/hooks/useMessages';
+import type { ReactionGroup } from '@/hooks/useReactions';
 
 interface MessageListProps {
   messages: Message[];
@@ -8,6 +9,8 @@ interface MessageListProps {
   currentUsername: string;
   onMessageSeen?: (messageId: string) => void;
   getSeenBy?: (messageId: string) => string[];
+  getReactionsForMessage?: (messageId: string) => ReactionGroup[];
+  onToggleReaction?: (messageId: string, emoji: string) => void;
 }
 
 export function MessageList({ 
@@ -16,6 +19,8 @@ export function MessageList({
   currentUsername,
   onMessageSeen,
   getSeenBy,
+  getReactionsForMessage,
+  onToggleReaction,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -65,6 +70,8 @@ export function MessageList({
               message={message} 
               isOwn={message.username === currentUsername}
               seenBy={isLastOwnMessage && getSeenBy ? getSeenBy(message.id) : undefined}
+              reactions={getReactionsForMessage ? getReactionsForMessage(message.id) : undefined}
+              onToggleReaction={onToggleReaction ? (emoji) => onToggleReaction(message.id, emoji) : undefined}
             />
           );
         })}

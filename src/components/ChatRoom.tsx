@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect } from 'react';
 import { GroupHeader } from './GroupHeader';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
@@ -8,6 +8,7 @@ import { useMessages } from '@/hooks/useMessages';
 import { usePresence } from '@/hooks/usePresence';
 import { useUsername } from '@/hooks/useUsername';
 import { useChatBackground } from '@/hooks/useChatBackground';
+import { useReactions } from '@/hooks/useReactions';
 import { cn } from '@/lib/utils';
 
 interface ChatRoomProps {
@@ -20,6 +21,7 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
   const { username, setUsername, hasUsername } = useUsername();
   const { messages, loading, isAIThinking, sendMessage, sendFileMessage } = useMessages(groupId, username);
   const { onlineCount, typingUsers, setTyping, markMessageSeen, getSeenBy } = usePresence(groupId, username);
+  const { fetchReactions, toggleReaction, getReactionsForMessage } = useReactions(groupId, username);
   const { 
     backgroundId, 
     setBackground, 
@@ -31,9 +33,20 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
 
   const messageIds = useMemo(() => messages.map(m => m.id), [messages]);
 
+  // Fetch reactions when messages change
+  useEffect(() => {
+    if (messageIds.length > 0) {
+      fetchReactions(messageIds);
+    }
+  }, [messageIds, fetchReactions]);
+
   const handleGetSeenBy = useCallback((messageId: string) => {
     return getSeenBy(messageId, messageIds, username);
   }, [getSeenBy, messageIds, username]);
+
+  const handleToggleReaction = useCallback((messageId: string, emoji: string) => {
+    toggleReaction(messageId, emoji);
+  }, [toggleReaction]);
 
   if (!hasUsername) {
     return <UsernamePrompt onSubmit={setUsername} />;
@@ -70,6 +83,8 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
           currentUsername={username}
           onMessageSeen={markMessageSeen}
           getSeenBy={handleGetSeenBy}
+          getReactionsForMessage={getReactionsForMessage}
+          onToggleReaction={handleToggleReaction}
         />
         <TypingIndicator typingUsers={typingUsers} isAIThinking={isAIThinking} />
         <MessageInput 
