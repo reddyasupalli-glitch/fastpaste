@@ -1,13 +1,27 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useGroup } from '@/hooks/useGroup';
+import { JoinCreateForm } from '@/components/JoinCreateForm';
+import { ChatRoom } from '@/components/ChatRoom';
 
 const Index = () => {
+  const { group, loading, error, createGroup, joinGroup, leaveGroup } = useGroup();
+
+  if (group) {
+    return (
+      <ChatRoom
+        groupId={group.id}
+        groupCode={group.code}
+        onLeave={leaveGroup}
+      />
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <JoinCreateForm
+      onJoin={joinGroup}
+      onCreate={createGroup}
+      loading={loading}
+      error={error}
+    />
   );
 };
 
