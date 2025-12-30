@@ -29,7 +29,7 @@ export function WelcomeDialog() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Code2 className="h-8 w-8 text-primary" />
           </div>
-          <DialogTitle className="text-2xl">Welcome to CodeSender</DialogTitle>
+          <DialogTitle className="text-2xl">Welcome to FastPaste</DialogTitle>
           <DialogDescription className="pt-2 text-base">
             Share code snippets and messages in real-time with your team.
           </DialogDescription>
