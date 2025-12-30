@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Send, Code, Type, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,17 +12,61 @@ interface FailedMessage {
 
 interface MessageInputProps {
   onSend: (content: string, type: 'text' | 'code') => Promise<boolean>;
+  onTypingChange?: (isTyping: boolean) => void;
 }
 
-export function MessageInput({ onSend }: MessageInputProps) {
+export function MessageInput({ onSend, onTypingChange }: MessageInputProps) {
   const [content, setContent] = useState('');
   const [isCodeMode, setIsCodeMode] = useState(false);
   const [sending, setSending] = useState(false);
   const [failedMessage, setFailedMessage] = useState<FailedMessage | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = useRef(false);
+
+  const setTyping = useCallback((typing: boolean) => {
+    if (isTypingRef.current !== typing) {
+      isTypingRef.current = typing;
+      onTypingChange?.(typing);
+    }
+  }, [onTypingChange]);
+
+  const handleContentChange = (value: string) => {
+    setContent(value);
+    
+    if (value.trim()) {
+      setTyping(true);
+      
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      // Stop typing after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        setTyping(false);
+      }, 2000);
+    } else {
+      setTyping(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      setTyping(false);
+    };
+  }, [setTyping]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim() || sending) return;
+
+    setTyping(false);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
 
     setSending(true);
     const messageContent = content;
@@ -78,7 +122,7 @@ export function MessageInput({ onSend }: MessageInputProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-border bg-card p-4">
+    <form onSubmit={handleSubmit} className="border-t border-border bg-card/90 backdrop-blur-sm p-4">
       {failedMessage && (
         <div className="mb-3 flex items-center gap-2 rounded-md bg-destructive/10 p-2 text-sm text-destructive">
           <span className="flex-1">Message failed to send</span>
@@ -117,7 +161,7 @@ export function MessageInput({ onSend }: MessageInputProps) {
         </div>
         <Textarea
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={(e) => handleContentChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={isCodeMode ? 'Paste your code here...' : 'Type a message...'}
           className={`min-h-[44px] flex-1 resize-none ${isCodeMode ? 'font-mono' : ''}`}
