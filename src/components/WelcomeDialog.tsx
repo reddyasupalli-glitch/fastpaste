@@ -7,27 +7,40 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Code2, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+import fastpasteLogo from '@/assets/fastpaste-logo.png';
 
-const SHOWN_KEY = 'welcome-dialog-shown';
+const SHOWN_KEY = 'fastpaste-welcome-shown-v1';
 
 export function WelcomeDialog() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const hasShown = sessionStorage.getItem(SHOWN_KEY);
-    if (!hasShown) {
-      setOpen(true);
-      sessionStorage.setItem(SHOWN_KEY, 'true');
-    }
+    // Small delay to ensure the component is mounted
+    const timer = setTimeout(() => {
+      const hasShown = localStorage.getItem(SHOWN_KEY);
+      if (!hasShown) {
+        setOpen(true);
+      }
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
+  const handleClose = () => {
+    localStorage.setItem(SHOWN_KEY, 'true');
+    setOpen(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Code2 className="h-8 w-8 text-primary" />
+          <div className="mx-auto mb-4">
+            <img 
+              src={fastpasteLogo} 
+              alt="FastPaste Logo" 
+              className="h-24 w-auto"
+            />
           </div>
           <DialogTitle className="text-2xl">Welcome to FastPaste</DialogTitle>
           <DialogDescription className="pt-2 text-base">
@@ -42,7 +55,7 @@ export function WelcomeDialog() {
           <p className="mt-1 font-semibold text-foreground">TRION SOLUTION PVT LTD</p>
           <p className="text-sm text-muted-foreground">by ASUREDDY</p>
         </div>
-        <Button onClick={() => setOpen(false)} className="mt-4 w-full">
+        <Button onClick={handleClose} className="mt-4 w-full">
           Get Started
         </Button>
       </DialogContent>

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Plus, LogIn, History, Trash2, Clock, UserPlus, Crown, Pencil, Check, X } from 'lucide-react';
 import { getGroupHistory, removeFromGroupHistory, updateGroupName, GroupHistoryItem } from '@/lib/groupHistory';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import fastpasteLogo from '@/assets/fastpaste-logo.png';
 
 interface JoinCreateFormProps {
   onJoin: (code: string) => Promise<unknown>;
@@ -82,7 +83,9 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
       </div>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold">FastPaste</CardTitle>
+          <div className="mx-auto mb-2">
+            <img src={fastpasteLogo} alt="FastPaste" className="h-16 w-auto" />
+          </div>
           <CardDescription>
             Share code snippets and messages in real-time
           </CardDescription>
