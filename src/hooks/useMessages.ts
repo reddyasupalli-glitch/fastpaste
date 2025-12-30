@@ -121,13 +121,18 @@ export function useMessages(groupId: string | null, username: string | null) {
 
       if (error) {
         console.error('AI function error:', error);
-        return null;
+        return "Sorry, I'm having trouble connecting right now. Please try again! 🔄";
       }
 
-      return data?.response || null;
+      if (data?.error) {
+        console.error('AI error response:', data.error);
+        return data.error;
+      }
+
+      return data?.response || "I couldn't generate a response. Please try again!";
     } catch (err) {
       console.error('Error getting AI response:', err);
-      return null;
+      return "Oops! Something went wrong. Please try again in a moment! 🙏";
     }
   };
 
