@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Plus, LogIn, History, Trash2, Clock, UserPlus, Crown, Pencil, Check, X } from 'lucide-react';
 import { getGroupHistory, removeFromGroupHistory, updateGroupName, GroupHistoryItem } from '@/lib/groupHistory';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { AdBanner } from '@/components/AdBanner';
 import fastpasteLogo from '@/assets/fastpaste-logo.png';
 
 interface JoinCreateFormProps {
@@ -130,6 +131,12 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
               Join Group
             </Button>
           </form>
+
+          <AdBanner 
+            slot="2983043441" 
+            format="auto" 
+            className="w-full min-h-[100px]" 
+          />
 
           {error && (
             <p className="text-center text-sm text-destructive">{error}</p>
