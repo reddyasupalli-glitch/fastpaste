@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Plus, LogIn, History, Trash2, Clock, UserPlus, Crown, Pencil, Check, X } from 'lucide-react';
+import { Plus, LogIn, History, Trash2, Clock, UserPlus, Crown, Pencil, Check, X, Info } from 'lucide-react';
 import { getGroupHistory, removeFromGroupHistory, updateGroupName, GroupHistoryItem } from '@/lib/groupHistory';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AdBanner } from '@/components/AdBanner';
@@ -79,7 +80,13 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-3 py-4 sm:p-4">
-      <div className="absolute right-3 top-3 sm:right-4 sm:top-4">
+      <div className="absolute right-3 top-3 flex items-center gap-1 sm:right-4 sm:top-4">
+        <Link to="/about">
+          <Button variant="ghost" size="icon" className="h-9 w-9">
+            <Info className="h-4 w-4" />
+            <span className="sr-only">About</span>
+          </Button>
+        </Link>
         <ThemeToggle />
       </div>
       <Card className="w-full max-w-md">
