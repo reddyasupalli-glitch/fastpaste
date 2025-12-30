@@ -28,15 +28,10 @@ Create a group using a 6-character code, share text or code instantly, and colla
 ### Frontend
 - React
 - Tailwind CSS
-- Socket.IO Client
+- Supabase Client
 
 ### Backend
-- Node.js
-- Express
-- Socket.IO
-
-### Database
-- MongoDB
+- Supabase (PostgreSQL + Realtime)
 
 ---
 
@@ -52,73 +47,64 @@ Create a group using a 6-character code, share text or code instantly, and colla
 ```bash
 git clone https://github.com/your-username/fastpaste.git
 cd fastpaste
-2️⃣ Install dependencies
-Backend
-bash
-Copy code
-cd server
+```
+
+### 2️⃣ Install dependencies
+```bash
 npm install
-Frontend
-bash
-Copy code
-cd client
-npm install
-3️⃣ Environment Variables
-Create a .env file in the server folder:
+```
 
-env
-Copy code
-MONGO_URI=your_mongodb_connection_string
-PORT=5000
-4️⃣ Run the app
-Start backend
-bash
-Copy code
+### 3️⃣ Environment Variables
+Create a `.env` file in the root folder:
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 4️⃣ Run the app
+```bash
 npm run dev
-Start frontend
-bash
-Copy code
-npm run dev
-🧠 How It Works
+```
 
-A group is created with a unique 6-character code
+---
 
-Users join using the code
+## 🧠 How It Works
 
-Messages are broadcast in real time using Socket.IO
+1. A group is created with a unique 6-character code
+2. Users join using the code
+3. Messages are broadcast in real time using Supabase Realtime
+4. Messages are saved to PostgreSQL database
+5. Code messages include a copy button for quick reuse
 
-Messages are saved to MongoDB
+---
 
-Code messages include a copy button for quick reuse
+## 🏢 Maintained By
 
-🏢 Maintained By
+**Trione Solutions Pvt Ltd**
 
-Trione Solutions Pvt Ltd
+---
 
-🚧 Roadmap
+## 🚧 Roadmap
 
- Syntax highlighting for code
+- [x] Syntax highlighting for code
+- [x] Dark mode
+- [x] Message timestamps
+- [x] File sharing
+- [ ] Group expiration settings
 
- Dark mode
+---
 
- Message timestamps
-
- File sharing
-
- Group expiration settings
-
-🤝 Contributing
+## 🤝 Contributing
 
 Contributions are welcome!
 
-Fork the repo
+1. Fork the repo
+2. Create a new branch
+3. Commit your changes
+4. Open a Pull Request
 
-Create a new branch
+---
 
-Commit your changes
-
-Open a Pull Request
-
-📄 License
+## 📄 License
 
 MIT License
