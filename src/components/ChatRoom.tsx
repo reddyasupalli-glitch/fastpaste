@@ -2,6 +2,7 @@ import { GroupHeader } from './GroupHeader';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { UsernamePrompt } from './UsernamePrompt';
+import { TypingIndicator } from './TypingIndicator';
 import { useMessages } from '@/hooks/useMessages';
 import { usePresence } from '@/hooks/usePresence';
 import { useUsername } from '@/hooks/useUsername';
@@ -17,7 +18,7 @@ interface ChatRoomProps {
 export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
   const { username, setUsername, hasUsername } = useUsername();
   const { messages, loading, sendMessage } = useMessages(groupId, username);
-  const { onlineCount } = usePresence(groupId);
+  const { onlineCount, typingUsers, setTyping } = usePresence(groupId, username);
   const { 
     backgroundId, 
     setBackground, 
@@ -52,7 +53,8 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
         onRemoveCustomBackground={removeCustomBackground}
       />
       <MessageList messages={messages} loading={loading} currentUsername={username} />
-      <MessageInput onSend={sendMessage} />
+      <TypingIndicator typingUsers={typingUsers} />
+      <MessageInput onSend={sendMessage} onTypingChange={setTyping} />
     </div>
   );
 }

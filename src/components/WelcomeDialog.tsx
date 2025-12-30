@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
 import fastpasteLogo from '@/assets/fastpaste-logo.png';
 
-const SHOWN_KEY = 'fastpaste-welcome-shown-v1';
+const SHOWN_KEY = 'fastpaste-welcome-shown-v2';
 
 export function WelcomeDialog() {
   const [open, setOpen] = useState(false);
