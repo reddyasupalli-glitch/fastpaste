@@ -13,6 +13,8 @@ interface GroupHeaderProps {
   backgroundId: string;
   backgroundOptions: BackgroundOption[];
   onBackgroundChange: (id: string) => void;
+  onAddCustomBackground: (name: string, imageUrl: string) => string;
+  onRemoveCustomBackground: (id: string) => void;
 }
 
 export function GroupHeader({ 
@@ -23,6 +25,8 @@ export function GroupHeader({
   backgroundId,
   backgroundOptions,
   onBackgroundChange,
+  onAddCustomBackground,
+  onRemoveCustomBackground,
 }: GroupHeaderProps) {
   const copyCode = () => {
     navigator.clipboard.writeText(code);
@@ -59,6 +63,8 @@ export function GroupHeader({
           currentId={backgroundId}
           options={backgroundOptions}
           onSelect={onBackgroundChange}
+          onAddCustom={onAddCustomBackground}
+          onRemoveCustom={onRemoveCustomBackground}
         />
         <ThemeToggle />
         <Button variant="ghost" size="sm" onClick={onLeave} className="text-muted-foreground hover:text-foreground">
