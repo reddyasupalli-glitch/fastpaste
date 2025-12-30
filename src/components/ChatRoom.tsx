@@ -45,33 +45,39 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
 
   return (
     <div 
-      className={cn("flex h-screen flex-col", !currentBackground.isCustom && currentBackground.style)}
+      className={cn(
+        "flex h-screen flex-col w-full",
+        !currentBackground.isCustom && currentBackground.style
+      )}
       style={backgroundStyle}
     >
-      <GroupHeader 
-        code={groupCode} 
-        onLeave={onLeave} 
-        onlineCount={onlineCount} 
-        username={username}
-        backgroundId={backgroundId}
-        backgroundOptions={backgroundOptions}
-        onBackgroundChange={setBackground}
-        onAddCustomBackground={addCustomBackground}
-        onRemoveCustomBackground={removeCustomBackground}
-      />
-      <MessageList 
-        messages={messages} 
-        loading={loading} 
-        currentUsername={username}
-        onMessageSeen={markMessageSeen}
-        getSeenBy={handleGetSeenBy}
-      />
-      <TypingIndicator typingUsers={typingUsers} />
-      <MessageInput 
-        onSend={sendMessage} 
-        onSendFile={sendFileMessage}
-        onTypingChange={setTyping} 
-      />
+      {/* Centered container for desktop */}
+      <div className="flex flex-col h-full w-full max-w-[1100px] mx-auto">
+        <GroupHeader 
+          code={groupCode} 
+          onLeave={onLeave} 
+          onlineCount={onlineCount} 
+          username={username}
+          backgroundId={backgroundId}
+          backgroundOptions={backgroundOptions}
+          onBackgroundChange={setBackground}
+          onAddCustomBackground={addCustomBackground}
+          onRemoveCustomBackground={removeCustomBackground}
+        />
+        <MessageList 
+          messages={messages} 
+          loading={loading} 
+          currentUsername={username}
+          onMessageSeen={markMessageSeen}
+          getSeenBy={handleGetSeenBy}
+        />
+        <TypingIndicator typingUsers={typingUsers} />
+        <MessageInput 
+          onSend={sendMessage} 
+          onSendFile={sendFileMessage}
+          onTypingChange={setTyping} 
+        />
+      </div>
     </div>
   );
 }

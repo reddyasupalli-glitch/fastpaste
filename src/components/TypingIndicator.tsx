@@ -18,18 +18,18 @@ export function TypingIndicator({ typingUsers }: TypingIndicatorProps) {
   };
 
   return (
-    <div className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground animate-fade-in">
+    <div className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-muted-foreground animate-fade-in">
       <div className="flex gap-1">
         <span className={cn(
-          "h-2 w-2 rounded-full bg-primary/60 animate-bounce",
+          "h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-primary/60 animate-bounce",
           "[animation-delay:0ms]"
         )} />
         <span className={cn(
-          "h-2 w-2 rounded-full bg-primary/60 animate-bounce",
+          "h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-primary/60 animate-bounce",
           "[animation-delay:150ms]"
         )} />
         <span className={cn(
-          "h-2 w-2 rounded-full bg-primary/60 animate-bounce",
+          "h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-primary/60 animate-bounce",
           "[animation-delay:300ms]"
         )} />
       </div>

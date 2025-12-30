@@ -77,28 +77,27 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="absolute right-4 top-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-3 py-4 sm:p-4">
+      <div className="absolute right-3 top-3 sm:right-4 sm:top-4">
         <ThemeToggle />
       </div>
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+        <CardHeader className="text-center px-4 sm:px-6">
           <div className="mx-auto mb-2">
-            <img src={fastpasteLogo} alt="FastPaste" className="h-16 w-auto" />
+            <img src={fastpasteLogo} alt="FastPaste" className="h-12 sm:h-16 w-auto" />
           </div>
-          <CardDescription>
+          <CardDescription className="text-xs sm:text-sm">
             Share code snippets and messages in real-time
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
           <div>
             <Button
               onClick={onCreate}
               disabled={loading}
-              className="w-full"
-              size="lg"
+              className="w-full h-10 sm:h-11 text-sm sm:text-base"
             >
-              <Plus className="mr-2 h-5 w-5" />
+              <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               Create New Group
             </Button>
           </div>
@@ -110,23 +109,22 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
             </span>
           </div>
 
-          <form onSubmit={handleJoin} className="space-y-3">
+          <form onSubmit={handleJoin} className="space-y-2 sm:space-y-3">
             <Input
               type="text"
               placeholder="Enter 6-character code"
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
-              className="text-center font-mono text-lg tracking-widest"
+              className="text-center font-mono text-base sm:text-lg tracking-widest h-10 sm:h-11"
               maxLength={6}
             />
             <Button
               type="submit"
               variant="secondary"
               disabled={joinCode.length !== 6 || loading}
-              className="w-full"
-              size="lg"
+              className="w-full h-10 sm:h-11 text-sm sm:text-base"
             >
-              <LogIn className="mr-2 h-5 w-5" />
+              <LogIn className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               Join Group
             </Button>
           </form>
@@ -149,25 +147,25 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
                 {history.map((item) => (
                   <div
                     key={item.code}
-                    className="group flex items-center justify-between rounded-lg border border-border bg-muted/50 p-3 transition-colors hover:bg-muted"
+                    className="group flex items-center justify-between rounded-lg border border-border bg-muted/50 p-2 sm:p-3 transition-colors hover:bg-muted"
                   >
                     <button
                       onClick={() => editingCode !== item.code && handleRejoin(item.code)}
                       disabled={loading || editingCode === item.code}
-                      className="flex flex-1 items-center gap-3 text-left"
+                      className="flex flex-1 items-center gap-2 sm:gap-3 text-left"
                     >
-                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                      <div className={`flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full ${
                         item.type === 'created' 
-                          ? 'bg-primary/10 text-primary' 
+                          ? 'bg-primary/10 text-primary'
                           : 'bg-secondary text-muted-foreground'
                       }`}>
                         {item.type === 'created' ? (
-                          <Crown className="h-4 w-4" />
+                          <Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         ) : (
-                          <UserPlus className="h-4 w-4" />
+                          <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         )}
                       </div>
-                      <div className="flex min-w-0 flex-col">
+                      <div className="flex min-w-0 flex-col gap-0.5">
                         {editingCode === item.code ? (
                           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             <Input
@@ -221,10 +219,10 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
                                 </code>
                               )}
                             </div>
-                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Clock className="h-3 w-3" />
+                              <span className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
+                              <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                               {formatTimeAgo(item.joinedAt)}
-                              <span className="mx-1">•</span>
+                              <span className="mx-0.5 sm:mx-1">•</span>
                               {item.type === 'created' ? 'Created' : 'Joined'}
                             </span>
                           </>
@@ -232,22 +230,22 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
                       </div>
                     </button>
                     {editingCode !== item.code && (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5 sm:gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={(e) => startEditing(item.code, item.customName, e)}
-                          className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
+                          className="h-7 w-7 sm:h-8 sm:w-8 opacity-100 sm:opacity-0 transition-opacity sm:group-hover:opacity-100"
                         >
-                          <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                          <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground hover:text-foreground" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={(e) => handleRemoveFromHistory(item.code, e)}
-                          className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
+                          className="h-7 w-7 sm:h-8 sm:w-8 opacity-100 sm:opacity-0 transition-opacity sm:group-hover:opacity-100"
                         >
-                          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                          <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground hover:text-destructive" />
                         </Button>
                       </div>
                     )}
