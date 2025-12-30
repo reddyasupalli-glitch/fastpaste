@@ -29,18 +29,27 @@ export function useMessages(groupId: string | null) {
     setLoading(false);
   }, [groupId]);
 
-  const sendMessage = async (content: string, messageType: 'text' | 'code') => {
-    if (!groupId || !content.trim()) return;
+  const sendMessage = async (content: string, messageType: 'text' | 'code'): Promise<boolean> => {
+    if (!groupId || !content.trim()) return false;
     
-    const { error } = await supabase
-      .from('messages')
-      .insert({
-        group_id: groupId,
-        content: content.trim(),
-        message_type: messageType,
-      });
-    
-    return !error;
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          group_id: groupId,
+          content: content.trim(),
+          message_type: messageType,
+        });
+      
+      if (error) {
+        console.error('Error sending message:', error);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('Error sending message:', err);
+      return false;
+    }
   };
 
   // Fetch messages on mount and when groupId changes
