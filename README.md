@@ -1,51 +1,124 @@
+# 🚀 FastPaste
 
+FastPaste is a real-time group-based text and code sharing platform, inspired by JustPaste but built for speed, collaboration, and simplicity.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Create a group using a 6-character code, share text or code instantly, and collaborate in real time — no login required.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+---
 
-# Step 3: Install the necessary dependencies.
-npm i
+## ✨ Features
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+- 🔑 Create groups with **random 6-character codes**
+- 👥 Join groups instantly using a code
+- ♻️ Groups persist even when all users leave
+- ⚡ **Real-time messaging** with WebSockets
+- 📝 Two message modes:
+  - Normal text
+  - Code snippets
+- 📋 **Copy-to-clipboard** button for code messages
+- 🔄 Toggle between **Text Mode** and **Code Mode**
+- 💾 Messages are stored and loaded when users rejoin
+- 🕶️ Clean, minimal UI (JustPaste-like)
+- 🙌 Anonymous usage (no authentication)
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🛠️ Tech Stack
 
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
+### Frontend
 - React
-- shadcn-ui
 - Tailwind CSS
+- Socket.IO Client
 
-## How can I deploy this project?
+### Backend
+- Node.js
+- Express
+- Socket.IO
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+### Database
+- MongoDB
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## 📸 Preview
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+> Coming soon 🚧
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+
+## 🧑‍💻 Getting Started
+
+### 1️⃣ Clone the repository
+```bash
+git clone https://github.com/your-username/fastpaste.git
+cd fastpaste
+2️⃣ Install dependencies
+Backend
+bash
+Copy code
+cd server
+npm install
+Frontend
+bash
+Copy code
+cd client
+npm install
+3️⃣ Environment Variables
+Create a .env file in the server folder:
+
+env
+Copy code
+MONGO_URI=your_mongodb_connection_string
+PORT=5000
+4️⃣ Run the app
+Start backend
+bash
+Copy code
+npm run dev
+Start frontend
+bash
+Copy code
+npm run dev
+🧠 How It Works
+
+A group is created with a unique 6-character code
+
+Users join using the code
+
+Messages are broadcast in real time using Socket.IO
+
+Messages are saved to MongoDB
+
+Code messages include a copy button for quick reuse
+
+🏢 Maintained By
+
+Trione Solutions Pvt Ltd
+
+🚧 Roadmap
+
+ Syntax highlighting for code
+
+ Dark mode
+
+ Message timestamps
+
+ File sharing
+
+ Group expiration settings
+
+🤝 Contributing
+
+Contributions are welcome!
+
+Fork the repo
+
+Create a new branch
+
+Commit your changes
+
+Open a Pull Request
+
+📄 License
+
+MIT License
