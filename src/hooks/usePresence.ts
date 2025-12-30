@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface PresenceState {
   odlk: string;
@@ -19,14 +20,17 @@ export function usePresence(groupId: string | null, username?: string) {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [readStatuses, setReadStatuses] = useState<UserReadStatus[]>([]);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
   const odlkRef = useRef<string>(`user-${Math.random().toString(36).substring(7)}`);
+  const isMountedRef = useRef(true);
   const currentStateRef = useRef({
     isTyping: false,
     lastSeenMessageId: null as string | null,
   });
 
   useEffect(() => {
+    isMountedRef.current = true;
+    
     if (!groupId) return;
 
     const channel = supabase.channel(`presence-${groupId}`, {
@@ -41,6 +45,8 @@ export function usePresence(groupId: string | null, username?: string) {
 
     channel
       .on('presence', { event: 'sync' }, () => {
+        if (!isMountedRef.current) return;
+        
         const state = channel.presenceState<PresenceState>();
         const users: string[] = [];
         const typing: string[] = [];
@@ -72,9 +78,9 @@ export function usePresence(groupId: string | null, username?: string) {
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
         console.log('User left:', key, leftPresences);
       })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED' && isMountedRef.current) {
+          channel.track({
             odlk: odlkRef.current,
             username: username || 'Anonymous',
             online_at: new Date().toISOString(),
@@ -86,17 +92,18 @@ export function usePresence(groupId: string | null, username?: string) {
       });
 
     return () => {
+      isMountedRef.current = false;
       channel.untrack();
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
   }, [groupId, username]);
 
-  const updatePresence = useCallback(async (updates: Partial<{ isTyping: boolean; lastSeenMessageId: string | null }>) => {
+  const updatePresence = useCallback((updates: Partial<{ isTyping: boolean; lastSeenMessageId: string | null }>) => {
     currentStateRef.current = { ...currentStateRef.current, ...updates };
     
-    if (channelRef.current) {
-      await channelRef.current.track({
+    if (channelRef.current && isMountedRef.current) {
+      channelRef.current.track({
         odlk: odlkRef.current,
         username: username || 'Anonymous',
         online_at: new Date().toISOString(),
@@ -106,12 +113,12 @@ export function usePresence(groupId: string | null, username?: string) {
     }
   }, [username]);
 
-  const setTyping = useCallback(async (isTyping: boolean) => {
-    await updatePresence({ isTyping });
+  const setTyping = useCallback((isTyping: boolean) => {
+    updatePresence({ isTyping });
   }, [updatePresence]);
 
-  const markMessageSeen = useCallback(async (messageId: string) => {
-    await updatePresence({ lastSeenMessageId: messageId });
+  const markMessageSeen = useCallback((messageId: string) => {
+    updatePresence({ lastSeenMessageId: messageId });
   }, [updatePresence]);
 
   // Get users who have seen a specific message
