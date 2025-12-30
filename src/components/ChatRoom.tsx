@@ -5,7 +5,7 @@ import { MessageInput } from './MessageInput';
 import { UsernamePrompt } from './UsernamePrompt';
 import { TypingIndicator } from './TypingIndicator';
 import { WelcomeDialog } from './WelcomeDialog';
-import { AdBanner } from './AdBanner';
+
 import { useMessages } from '@/hooks/useMessages';
 import { usePresence } from '@/hooks/usePresence';
 import { useUsername } from '@/hooks/useUsername';
@@ -70,11 +70,6 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
       >
       {/* Centered container for desktop */}
       <div className="flex flex-col h-full w-full max-w-full md:max-w-[90%] lg:max-w-[1400px] mx-auto px-0 md:px-6 lg:px-8">
-        <AdBanner 
-          slot="8417195346" 
-          format="auto" 
-          className="w-full min-h-[100px] my-2" 
-        />
         <GroupHeader 
           code={groupCode} 
           onLeave={onLeave} 
