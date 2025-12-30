@@ -3,14 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Plus, LogIn, History, Trash2, Clock } from 'lucide-react';
-import { getGroupHistory, removeFromGroupHistory } from '@/lib/groupHistory';
+import { Plus, LogIn, History, Trash2, Clock, UserPlus, Crown } from 'lucide-react';
+import { getGroupHistory, removeFromGroupHistory, GroupHistoryItem } from '@/lib/groupHistory';
 import { ThemeToggle } from '@/components/ThemeToggle';
-
-interface GroupHistoryItem {
-  code: string;
-  joinedAt: string;
-}
 
 interface JoinCreateFormProps {
   onJoin: (code: string) => Promise<unknown>;
@@ -136,13 +131,28 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
                       disabled={loading}
                       className="flex flex-1 items-center gap-3 text-left"
                     >
-                      <code className="rounded bg-background px-2 py-1 font-mono text-sm font-semibold">
-                        {item.code}
-                      </code>
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {formatTimeAgo(item.joinedAt)}
-                      </span>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                        item.type === 'created' 
+                          ? 'bg-primary/10 text-primary' 
+                          : 'bg-secondary text-muted-foreground'
+                      }`}>
+                        {item.type === 'created' ? (
+                          <Crown className="h-4 w-4" />
+                        ) : (
+                          <UserPlus className="h-4 w-4" />
+                        )}
+                      </div>
+                      <div className="flex flex-col">
+                        <code className="font-mono text-sm font-semibold">
+                          {item.code}
+                        </code>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {formatTimeAgo(item.joinedAt)}
+                          <span className="mx-1">•</span>
+                          {item.type === 'created' ? 'Created' : 'Joined'}
+                        </span>
+                      </div>
                     </button>
                     <Button
                       variant="ghost"

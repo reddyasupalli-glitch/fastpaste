@@ -1,6 +1,7 @@
-interface GroupHistoryItem {
+export interface GroupHistoryItem {
   code: string;
   joinedAt: string;
+  type: 'created' | 'joined';
 }
 
 const STORAGE_KEY = 'chat-group-history';
@@ -15,7 +16,7 @@ export function getGroupHistory(): GroupHistoryItem[] {
   }
 }
 
-export function addToGroupHistory(code: string): void {
+export function addToGroupHistory(code: string, type: 'created' | 'joined'): void {
   const history = getGroupHistory();
   
   // Remove if already exists
@@ -23,7 +24,7 @@ export function addToGroupHistory(code: string): void {
   
   // Add to beginning
   const updated = [
-    { code, joinedAt: new Date().toISOString() },
+    { code, joinedAt: new Date().toISOString(), type },
     ...filtered,
   ].slice(0, MAX_HISTORY);
   
