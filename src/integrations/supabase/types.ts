@@ -39,6 +39,9 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          file_name: string | null
+          file_type: string | null
+          file_url: string | null
           group_id: string
           id: string
           message_type: string
@@ -47,6 +50,9 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
           group_id: string
           id?: string
           message_type?: string
@@ -55,6 +61,9 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
           group_id?: string
           id?: string
           message_type?: string

@@ -1,4 +1,4 @@
-import { Copy, Check, CheckCheck } from 'lucide-react';
+import { Copy, Check, CheckCheck, Download, FileText, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Highlight, themes } from 'prism-react-renderer';
@@ -13,12 +13,15 @@ interface MessageBubbleProps {
 
 export function MessageBubble({ message, isOwn, seenBy = [] }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const copyCode = () => {
     navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const isImage = message.file_type?.startsWith('image/');
 
   const renderSeenBy = () => {
     if (!isOwn || seenBy.length === 0) return null;
@@ -37,6 +40,68 @@ export function MessageBubble({ message, isOwn, seenBy = [] }: MessageBubbleProp
     );
   };
 
+  // File message
+  if (message.message_type === 'file' && message.file_url) {
+    return (
+      <div className={cn("my-2 max-w-[80%]", isOwn && "ml-auto")}>
+        <div className="mb-1">
+          <span className={`text-xs font-medium ${isOwn ? 'text-primary' : 'text-muted-foreground'}`}>
+            {isOwn ? 'You' : message.username}
+          </span>
+        </div>
+        <div className={cn(
+          "rounded-lg overflow-hidden",
+          isOwn ? "bg-primary/10" : "bg-secondary"
+        )}>
+          {isImage ? (
+            <div className="relative">
+              {!imageLoaded && (
+                <div className="flex h-48 items-center justify-center bg-muted">
+                  <ImageIcon className="h-8 w-8 animate-pulse text-muted-foreground" />
+                </div>
+              )}
+              <img
+                src={message.file_url}
+                alt={message.file_name || 'Image'}
+                className={cn(
+                  "max-h-64 w-auto rounded-lg cursor-pointer transition-opacity",
+                  !imageLoaded && "hidden"
+                )}
+                onLoad={() => setImageLoaded(true)}
+                onClick={() => window.open(message.file_url!, '_blank')}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 p-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+                <FileText className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="truncate font-medium text-sm">{message.file_name}</p>
+                <p className="text-xs text-muted-foreground">{message.file_type}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => window.open(message.file_url!, '_blank')}
+                title="Download file"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+        <div className="mt-1">
+          <time className="text-xs text-muted-foreground">
+            {new Date(message.created_at).toLocaleTimeString()}
+          </time>
+        </div>
+        {renderSeenBy()}
+      </div>
+    );
+  }
+
+  // Code message
   if (message.message_type === 'code') {
     return (
       <div className={`group relative my-2 max-w-full ${isOwn ? 'ml-auto' : ''}`}>
@@ -101,6 +166,7 @@ export function MessageBubble({ message, isOwn, seenBy = [] }: MessageBubbleProp
     );
   }
 
+  // Text message
   return (
     <div className={cn("my-2 max-w-[80%]", isOwn && "ml-auto")}>
       <div className="mb-1">
