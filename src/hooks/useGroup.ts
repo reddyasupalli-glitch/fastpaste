@@ -32,7 +32,7 @@ export function useGroup() {
       
       if (data) {
         setGroup(data);
-        addToGroupHistory(data.code);
+        addToGroupHistory(data.code, 'created');
         setLoading(false);
         return data;
       }
@@ -75,7 +75,7 @@ export function useGroup() {
     }
     
     setGroup(data);
-    addToGroupHistory(data.code);
+    addToGroupHistory(data.code, 'joined');
     setLoading(false);
     return data;
   };
