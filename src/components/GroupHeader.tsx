@@ -1,4 +1,4 @@
-import { Copy, LogOut } from 'lucide-react';
+import { Copy, LogOut, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -6,9 +6,10 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 interface GroupHeaderProps {
   code: string;
   onLeave: () => void;
+  onlineCount: number;
 }
 
-export function GroupHeader({ code, onLeave }: GroupHeaderProps) {
+export function GroupHeader({ code, onLeave, onlineCount }: GroupHeaderProps) {
   const copyCode = () => {
     navigator.clipboard.writeText(code);
     toast({
@@ -27,6 +28,14 @@ export function GroupHeader({ code, onLeave }: GroupHeaderProps) {
         <Button variant="ghost" size="icon" onClick={copyCode}>
           <Copy className="h-4 w-4" />
         </Button>
+        <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
+          </span>
+          <Users className="h-3.5 w-3.5 text-primary" />
+          <span className="text-sm font-medium text-primary">{onlineCount}</span>
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <ThemeToggle />
