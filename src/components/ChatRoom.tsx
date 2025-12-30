@@ -59,7 +59,7 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
 
   return (
     <>
-      <WelcomeDialog inChatRoom />
+      <WelcomeDialog inChatRoom roomCode={groupCode} />
       <div 
         className={cn(
           "flex h-screen flex-col w-full",
