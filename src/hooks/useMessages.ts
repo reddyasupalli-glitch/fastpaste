@@ -23,11 +23,44 @@ export function useMessages(groupId: string | null, username: string | null) {
   const [isAIThinking, setIsAIThinking] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const isSubscribedRef = useRef(false);
+  const isMountedRef = useRef(true);
+  const messagesRef = useRef<Message[]>([]);
+
+  // Keep messagesRef in sync
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  // Track mounted state
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const safeSetMessages = useCallback((updater: React.SetStateAction<Message[]>) => {
+    if (isMountedRef.current) {
+      setMessages(updater);
+    }
+  }, []);
+
+  const safeSetLoading = useCallback((value: boolean) => {
+    if (isMountedRef.current) {
+      setLoading(value);
+    }
+  }, []);
+
+  const safeSetIsAIThinking = useCallback((value: boolean) => {
+    if (isMountedRef.current) {
+      setIsAIThinking(value);
+    }
+  }, []);
 
   const fetchMessages = useCallback(async () => {
     if (!groupId) return;
     
-    setLoading(true);
+    safeSetLoading(true);
     const { data, error } = await supabase
       .from('messages')
       .select('*')
@@ -39,10 +72,10 @@ export function useMessages(groupId: string | null, username: string | null) {
     }
     
     if (data) {
-      setMessages(data as Message[]);
+      safeSetMessages(data as Message[]);
     }
-    setLoading(false);
-  }, [groupId]);
+    safeSetLoading(false);
+  }, [groupId, safeSetLoading, safeSetMessages]);
 
   const checkForAITrigger = (content: string): { isAIMessage: boolean; question: string } => {
     for (const pattern of AI_TRIGGER_PATTERNS) {
@@ -78,8 +111,8 @@ export function useMessages(groupId: string | null, username: string | null) {
     }
   };
 
-  const sendAIMessage = async (content: string): Promise<boolean> => {
-    if (!groupId) return false;
+  const sendAIMessage = useCallback(async (content: string): Promise<boolean> => {
+    if (!groupId || !isMountedRef.current) return false;
 
     const optimisticId = `temp-ai-${Date.now()}`;
     const optimisticMessage: Message = {
@@ -91,7 +124,7 @@ export function useMessages(groupId: string | null, username: string | null) {
       created_at: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, optimisticMessage]);
+    safeSetMessages((prev) => [...prev, optimisticMessage]);
 
     try {
       const { data, error } = await supabase
@@ -107,25 +140,25 @@ export function useMessages(groupId: string | null, username: string | null) {
 
       if (error) {
         console.error('Error sending AI message:', error);
-        setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+        safeSetMessages((prev) => prev.filter((m) => m.id !== optimisticId));
         return false;
       }
 
       if (data) {
-        setMessages((prev) =>
+        safeSetMessages((prev) =>
           prev.map((m) => m.id === optimisticId ? (data as Message) : m)
         );
       }
       return true;
     } catch (err) {
       console.error('Error sending AI message:', err);
-      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      safeSetMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       return false;
     }
-  };
+  }, [groupId, safeSetMessages]);
 
-  const sendMessage = async (content: string, messageType: 'text' | 'code'): Promise<boolean> => {
-    if (!groupId || !content.trim() || !username) return false;
+  const sendMessage = useCallback(async (content: string, messageType: 'text' | 'code'): Promise<boolean> => {
+    if (!groupId || !content.trim() || !username || !isMountedRef.current) return false;
     
     // Create optimistic message
     const optimisticId = `temp-${Date.now()}`;
@@ -139,7 +172,7 @@ export function useMessages(groupId: string | null, username: string | null) {
     };
     
     // Add optimistically
-    setMessages((prev) => [...prev, optimisticMessage]);
+    safeSetMessages((prev) => [...prev, optimisticMessage]);
     
     try {
       const { data, error } = await supabase
@@ -155,51 +188,43 @@ export function useMessages(groupId: string | null, username: string | null) {
       
       if (error) {
         console.error('Error sending message:', error);
-        // Remove optimistic message on error
-        setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+        safeSetMessages((prev) => prev.filter((m) => m.id !== optimisticId));
         return false;
       }
       
       // Replace optimistic message with real one
       if (data) {
-        setMessages((prev) => 
+        safeSetMessages((prev) => 
           prev.map((m) => m.id === optimisticId ? (data as Message) : m)
         );
       }
 
       // Check if message triggers AI response
       const { isAIMessage, question } = checkForAITrigger(content.trim());
-      if (isAIMessage && question) {
-        setIsAIThinking(true);
+      if (isAIMessage && question && isMountedRef.current) {
+        safeSetIsAIThinking(true);
         try {
-          // Get current messages for context
-          const currentMessages = await new Promise<Message[]>((resolve) => {
-            setMessages((prev) => {
-              resolve(prev);
-              return prev;
-            });
-          });
-
+          // Use messagesRef for context instead of setState trick
+          const currentMessages = messagesRef.current;
           const aiResponse = await getAIResponse(question, currentMessages);
-          if (aiResponse) {
+          if (aiResponse && isMountedRef.current) {
             await sendAIMessage(aiResponse);
           }
         } finally {
-          setIsAIThinking(false);
+          safeSetIsAIThinking(false);
         }
       }
 
       return true;
     } catch (err) {
       console.error('Error sending message:', err);
-      // Remove optimistic message on error
-      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      safeSetMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       return false;
     }
-  };
+  }, [groupId, username, safeSetMessages, safeSetIsAIThinking, sendAIMessage]);
 
-  const sendFileMessage = async (file: File): Promise<boolean> => {
-    if (!groupId || !username) return false;
+  const sendFileMessage = useCallback(async (file: File): Promise<boolean> => {
+    if (!groupId || !username || !isMountedRef.current) return false;
 
     const maxSize = 10 * 1024 * 1024; // 10MB limit
     if (file.size > maxSize) {
@@ -220,7 +245,7 @@ export function useMessages(groupId: string | null, username: string | null) {
       file_type: file.type,
     };
     
-    setMessages((prev) => [...prev, optimisticMessage]);
+    safeSetMessages((prev) => [...prev, optimisticMessage]);
 
     try {
       // Upload file to storage
@@ -233,7 +258,7 @@ export function useMessages(groupId: string | null, username: string | null) {
 
       if (uploadError) {
         console.error('Error uploading file:', uploadError);
-        setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+        safeSetMessages((prev) => prev.filter((m) => m.id !== optimisticId));
         return false;
       }
 
@@ -259,22 +284,22 @@ export function useMessages(groupId: string | null, username: string | null) {
 
       if (error) {
         console.error('Error sending file message:', error);
-        setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+        safeSetMessages((prev) => prev.filter((m) => m.id !== optimisticId));
         return false;
       }
 
       if (data) {
-        setMessages((prev) => 
+        safeSetMessages((prev) => 
           prev.map((m) => m.id === optimisticId ? (data as Message) : m)
         );
       }
       return true;
     } catch (err) {
       console.error('Error sending file:', err);
-      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      safeSetMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       return false;
     }
-  };
+  }, [groupId, username, safeSetMessages]);
 
   // Fetch messages on mount and when groupId changes
   useEffect(() => {
