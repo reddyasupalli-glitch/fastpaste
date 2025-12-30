@@ -19,9 +19,13 @@ export function useMessages(groupId: string | null) {
     setLoading(true);
     const { data, error } = await supabase
       .from('messages')
-      .select()
+      .select('*')
       .eq('group_id', groupId)
       .order('created_at', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching messages:', error);
+    }
     
     if (data) {
       setMessages(data as Message[]);
@@ -32,22 +36,48 @@ export function useMessages(groupId: string | null) {
   const sendMessage = async (content: string, messageType: 'text' | 'code'): Promise<boolean> => {
     if (!groupId || !content.trim()) return false;
     
+    // Create optimistic message
+    const optimisticId = `temp-${Date.now()}`;
+    const optimisticMessage: Message = {
+      id: optimisticId,
+      group_id: groupId,
+      content: content.trim(),
+      message_type: messageType,
+      created_at: new Date().toISOString(),
+    };
+    
+    // Add optimistically
+    setMessages((prev) => [...prev, optimisticMessage]);
+    
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('messages')
         .insert({
           group_id: groupId,
           content: content.trim(),
           message_type: messageType,
-        });
+        })
+        .select()
+        .single();
       
       if (error) {
         console.error('Error sending message:', error);
+        // Remove optimistic message on error
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
         return false;
+      }
+      
+      // Replace optimistic message with real one
+      if (data) {
+        setMessages((prev) => 
+          prev.map((m) => m.id === optimisticId ? (data as Message) : m)
+        );
       }
       return true;
     } catch (err) {
       console.error('Error sending message:', err);
+      // Remove optimistic message on error
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       return false;
     }
   };
@@ -61,6 +91,8 @@ export function useMessages(groupId: string | null) {
   useEffect(() => {
     if (!groupId) return;
 
+    console.log('Subscribing to realtime for group:', groupId);
+
     const channel = supabase
       .channel(`messages-${groupId}`)
       .on(
@@ -72,13 +104,29 @@ export function useMessages(groupId: string | null) {
           filter: `group_id=eq.${groupId}`,
         },
         (payload) => {
+          console.log('Realtime message received:', payload);
           const newMessage = payload.new as Message;
-          setMessages((prev) => [...prev, newMessage]);
+          // Avoid duplicates - check if message already exists
+          setMessages((prev) => {
+            const exists = prev.some((m) => m.id === newMessage.id);
+            if (exists) return prev;
+            // Also check for temp messages with same content to avoid dupes
+            const tempMatch = prev.find(
+              (m) => m.id.startsWith('temp-') && m.content === newMessage.content
+            );
+            if (tempMatch) {
+              return prev.map((m) => m.id === tempMatch.id ? newMessage : m);
+            }
+            return [...prev, newMessage];
+          });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
 
     return () => {
+      console.log('Unsubscribing from realtime for group:', groupId);
       supabase.removeChannel(channel);
     };
   }, [groupId]);
@@ -87,5 +135,6 @@ export function useMessages(groupId: string | null) {
     messages,
     loading,
     sendMessage,
+    refetch: fetchMessages,
   };
 }
