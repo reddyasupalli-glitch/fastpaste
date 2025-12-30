@@ -1,6 +1,7 @@
 import { Copy, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface GroupHeaderProps {
   code: string;
@@ -27,10 +28,13 @@ export function GroupHeader({ code, onLeave }: GroupHeaderProps) {
           <Copy className="h-4 w-4" />
         </Button>
       </div>
-      <Button variant="ghost" size="sm" onClick={onLeave} className="text-muted-foreground hover:text-foreground">
-        <LogOut className="mr-2 h-4 w-4" />
-        Leave
-      </Button>
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
+        <Button variant="ghost" size="sm" onClick={onLeave} className="text-muted-foreground hover:text-foreground">
+          <LogOut className="mr-2 h-4 w-4" />
+          Leave
+        </Button>
+      </div>
     </header>
   );
 }
