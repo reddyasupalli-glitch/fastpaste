@@ -1,27 +1,36 @@
 import { useGroup } from '@/hooks/useGroup';
 import { JoinCreateForm } from '@/components/JoinCreateForm';
 import { ChatRoom } from '@/components/ChatRoom';
+import { WelcomeDialog } from '@/components/WelcomeDialog';
+import { Footer } from '@/components/Footer';
 
 const Index = () => {
   const { group, loading, error, createGroup, joinGroup, leaveGroup } = useGroup();
 
   if (group) {
     return (
-      <ChatRoom
-        groupId={group.id}
-        groupCode={group.code}
-        onLeave={leaveGroup}
-      />
+      <>
+        <WelcomeDialog />
+        <ChatRoom
+          groupId={group.id}
+          groupCode={group.code}
+          onLeave={leaveGroup}
+        />
+      </>
     );
   }
 
   return (
-    <JoinCreateForm
-      onJoin={joinGroup}
-      onCreate={createGroup}
-      loading={loading}
-      error={error}
-    />
+    <>
+      <WelcomeDialog />
+      <JoinCreateForm
+        onJoin={joinGroup}
+        onCreate={createGroup}
+        loading={loading}
+        error={error}
+      />
+      <Footer />
+    </>
   );
 };
 
