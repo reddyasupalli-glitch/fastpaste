@@ -1,1 +1,4 @@
 project_id = "bqrgnunmyqbhwaivywnc"
+
+[functions.cleanup-expired-groups]
+verify_jwt = false
