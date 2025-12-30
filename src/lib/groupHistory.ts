@@ -2,6 +2,7 @@ export interface GroupHistoryItem {
   code: string;
   joinedAt: string;
   type: 'created' | 'joined';
+  customName?: string;
 }
 
 const STORAGE_KEY = 'chat-group-history';
@@ -19,15 +20,27 @@ export function getGroupHistory(): GroupHistoryItem[] {
 export function addToGroupHistory(code: string, type: 'created' | 'joined'): void {
   const history = getGroupHistory();
   
+  // Check if already exists and preserve custom name
+  const existing = history.find((item) => item.code === code);
+  const customName = existing?.customName;
+  
   // Remove if already exists
   const filtered = history.filter((item) => item.code !== code);
   
   // Add to beginning
   const updated = [
-    { code, joinedAt: new Date().toISOString(), type },
+    { code, joinedAt: new Date().toISOString(), type, customName },
     ...filtered,
   ].slice(0, MAX_HISTORY);
   
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+}
+
+export function updateGroupName(code: string, customName: string): void {
+  const history = getGroupHistory();
+  const updated = history.map((item) => 
+    item.code === code ? { ...item, customName: customName.trim() || undefined } : item
+  );
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 }
 
