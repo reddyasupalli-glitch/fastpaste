@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { ArrowLeft, Code, Users, Zap, Shield } from 'lucide-react';
+import { ArrowLeft, Code, Users, Zap, Shield, Github, Twitter, Mail } from 'lucide-react';
 import fastpasteLogo from '@/assets/fastpaste-logo.png';
 
 const About = () => {
@@ -78,6 +78,37 @@ const About = () => {
                 </p>
               </div>
             </div>
+          </div>
+
+          <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
+            <h3 className="mb-3 font-semibold text-foreground">Connect With Us</h3>
+            <div className="flex justify-center gap-3">
+              <a
+                href="https://github.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-background border border-border text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+              >
+                <Github className="h-5 w-5" />
+              </a>
+              <a
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-background border border-border text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+              >
+                <Twitter className="h-5 w-5" />
+              </a>
+              <a
+                href="mailto:contact@fastpaste.app"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-background border border-border text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+              >
+                <Mail className="h-5 w-5" />
+              </a>
+            </div>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Have questions or feedback? Reach out to us!
+            </p>
           </div>
 
           <div className="text-center">
