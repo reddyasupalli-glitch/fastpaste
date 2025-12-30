@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { generateGroupCode } from '@/lib/groupUtils';
+import { addToGroupHistory } from '@/lib/groupHistory';
 
 interface Group {
   id: string;
@@ -31,6 +32,7 @@ export function useGroup() {
       
       if (data) {
         setGroup(data);
+        addToGroupHistory(data.code);
         setLoading(false);
         return data;
       }
@@ -73,6 +75,7 @@ export function useGroup() {
     }
     
     setGroup(data);
+    addToGroupHistory(data.code);
     setLoading(false);
     return data;
   };
