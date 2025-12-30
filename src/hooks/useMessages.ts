@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export interface Message {
   id: string;
@@ -16,6 +17,8 @@ export interface Message {
 export function useMessages(groupId: string | null, username: string | null) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const isSubscribedRef = useRef(false);
 
   const fetchMessages = useCallback(async () => {
     if (!groupId) return;
@@ -171,14 +174,22 @@ export function useMessages(groupId: string | null, username: string | null) {
     fetchMessages();
   }, [fetchMessages]);
 
-  // Subscribe to realtime updates
+  // Subscribe to realtime updates - using a stable subscription
   useEffect(() => {
     if (!groupId) return;
 
-    console.log('Subscribing to realtime for group:', groupId);
+    // Cleanup previous subscription if exists
+    if (channelRef.current) {
+      console.log('Cleaning up previous subscription');
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+      isSubscribedRef.current = false;
+    }
+
+    console.log('Setting up realtime subscription for group:', groupId);
 
     const channel = supabase
-      .channel(`messages-${groupId}`)
+      .channel(`messages-realtime-${groupId}`)
       .on(
         'postgres_changes',
         {
@@ -188,30 +199,85 @@ export function useMessages(groupId: string | null, username: string | null) {
           filter: `group_id=eq.${groupId}`,
         },
         (payload) => {
-          console.log('Realtime message received:', payload);
+          console.log('Realtime INSERT received:', payload);
           const newMessage = payload.new as Message;
-          // Avoid duplicates - check if message already exists
+          
           setMessages((prev) => {
-            const exists = prev.some((m) => m.id === newMessage.id);
-            if (exists) return prev;
-            // Also check for temp messages with same content to avoid dupes
+            // Check if message already exists by ID
+            const existsById = prev.some((m) => m.id === newMessage.id);
+            if (existsById) {
+              console.log('Message already exists by ID, skipping');
+              return prev;
+            }
+            
+            // Check for optimistic message with matching content and username
             const tempMatch = prev.find(
-              (m) => m.id.startsWith('temp-') && m.content === newMessage.content
+              (m) => m.id.startsWith('temp-') && 
+                     m.content === newMessage.content &&
+                     m.username === newMessage.username
             );
+            
             if (tempMatch) {
+              console.log('Replacing optimistic message with real one');
               return prev.map((m) => m.id === tempMatch.id ? newMessage : m);
             }
+            
+            console.log('Adding new message from realtime');
             return [...prev, newMessage];
           });
         }
       )
-      .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
-      });
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `group_id=eq.${groupId}`,
+        },
+        (payload) => {
+          console.log('Realtime UPDATE received:', payload);
+          const updatedMessage = payload.new as Message;
+          setMessages((prev) =>
+            prev.map((m) => m.id === updatedMessage.id ? updatedMessage : m)
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'messages',
+          filter: `group_id=eq.${groupId}`,
+        },
+        (payload) => {
+          console.log('Realtime DELETE received:', payload);
+          const deletedMessage = payload.old as { id: string };
+          setMessages((prev) => prev.filter((m) => m.id !== deletedMessage.id));
+        }
+      );
+
+    channelRef.current = channel;
+
+    channel.subscribe((status) => {
+      console.log('Realtime subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        isSubscribedRef.current = true;
+        console.log('Successfully subscribed to realtime for group:', groupId);
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        isSubscribedRef.current = false;
+        console.error('Realtime subscription error or closed:', status);
+      }
+    });
 
     return () => {
-      console.log('Unsubscribing from realtime for group:', groupId);
-      supabase.removeChannel(channel);
+      console.log('Cleanup: Unsubscribing from realtime for group:', groupId);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        isSubscribedRef.current = false;
+      }
     };
   }, [groupId]);
 
