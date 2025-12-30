@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from 'react';
 import { GroupHeader } from './GroupHeader';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
@@ -18,7 +19,7 @@ interface ChatRoomProps {
 export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
   const { username, setUsername, hasUsername } = useUsername();
   const { messages, loading, sendMessage } = useMessages(groupId, username);
-  const { onlineCount, typingUsers, setTyping } = usePresence(groupId, username);
+  const { onlineCount, typingUsers, setTyping, markMessageSeen, getSeenBy } = usePresence(groupId, username);
   const { 
     backgroundId, 
     setBackground, 
@@ -27,6 +28,12 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
     addCustomBackground,
     removeCustomBackground,
   } = useChatBackground();
+
+  const messageIds = useMemo(() => messages.map(m => m.id), [messages]);
+
+  const handleGetSeenBy = useCallback((messageId: string) => {
+    return getSeenBy(messageId, messageIds, username);
+  }, [getSeenBy, messageIds, username]);
 
   if (!hasUsername) {
     return <UsernamePrompt onSubmit={setUsername} />;
@@ -52,7 +59,13 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
         onAddCustomBackground={addCustomBackground}
         onRemoveCustomBackground={removeCustomBackground}
       />
-      <MessageList messages={messages} loading={loading} currentUsername={username} />
+      <MessageList 
+        messages={messages} 
+        loading={loading} 
+        currentUsername={username}
+        onMessageSeen={markMessageSeen}
+        getSeenBy={handleGetSeenBy}
+      />
       <TypingIndicator typingUsers={typingUsers} />
       <MessageInput onSend={sendMessage} onTypingChange={setTyping} />
     </div>

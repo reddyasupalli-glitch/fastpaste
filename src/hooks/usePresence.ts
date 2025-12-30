@@ -6,14 +6,25 @@ interface PresenceState {
   username: string;
   online_at: string;
   isTyping: boolean;
+  lastSeenMessageId: string | null;
+}
+
+interface UserReadStatus {
+  username: string;
+  lastSeenMessageId: string | null;
 }
 
 export function usePresence(groupId: string | null, username?: string) {
   const [onlineCount, setOnlineCount] = useState(0);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [readStatuses, setReadStatuses] = useState<UserReadStatus[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const odlkRef = useRef<string>(`user-${Math.random().toString(36).substring(7)}`);
+  const currentStateRef = useRef({
+    isTyping: false,
+    lastSeenMessageId: null as string | null,
+  });
 
   useEffect(() => {
     if (!groupId) return;
@@ -33,6 +44,7 @@ export function usePresence(groupId: string | null, username?: string) {
         const state = channel.presenceState<PresenceState>();
         const users: string[] = [];
         const typing: string[] = [];
+        const statuses: UserReadStatus[] = [];
         
         Object.values(state).forEach((presences) => {
           presences.forEach((presence: PresenceState) => {
@@ -41,6 +53,10 @@ export function usePresence(groupId: string | null, username?: string) {
               if (presence.isTyping && presence.username !== username) {
                 typing.push(presence.username);
               }
+              statuses.push({
+                username: presence.username,
+                lastSeenMessageId: presence.lastSeenMessageId,
+              });
             }
           });
         });
@@ -48,6 +64,7 @@ export function usePresence(groupId: string | null, username?: string) {
         setOnlineCount(Object.keys(state).length);
         setOnlineUsers(users);
         setTypingUsers(typing);
+        setReadStatuses(statuses);
       })
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
         console.log('User joined:', key, newPresences);
@@ -62,6 +79,7 @@ export function usePresence(groupId: string | null, username?: string) {
             username: username || 'Anonymous',
             online_at: new Date().toISOString(),
             isTyping: false,
+            lastSeenMessageId: null,
           });
           console.log('Presence tracked for group:', groupId);
         }
@@ -74,21 +92,50 @@ export function usePresence(groupId: string | null, username?: string) {
     };
   }, [groupId, username]);
 
-  const setTyping = useCallback(async (isTyping: boolean) => {
+  const updatePresence = useCallback(async (updates: Partial<{ isTyping: boolean; lastSeenMessageId: string | null }>) => {
+    currentStateRef.current = { ...currentStateRef.current, ...updates };
+    
     if (channelRef.current) {
       await channelRef.current.track({
         odlk: odlkRef.current,
         username: username || 'Anonymous',
         online_at: new Date().toISOString(),
-        isTyping,
+        isTyping: currentStateRef.current.isTyping,
+        lastSeenMessageId: currentStateRef.current.lastSeenMessageId,
       });
     }
   }, [username]);
+
+  const setTyping = useCallback(async (isTyping: boolean) => {
+    await updatePresence({ isTyping });
+  }, [updatePresence]);
+
+  const markMessageSeen = useCallback(async (messageId: string) => {
+    await updatePresence({ lastSeenMessageId: messageId });
+  }, [updatePresence]);
+
+  // Get users who have seen a specific message
+  const getSeenBy = useCallback((messageId: string, allMessageIds: string[], excludeUsername?: string) => {
+    return readStatuses
+      .filter(status => {
+        if (status.username === excludeUsername) return false;
+        if (!status.lastSeenMessageId) return false;
+        
+        // Check if the user has seen this message or a later one
+        const messageIndex = allMessageIds.indexOf(messageId);
+        const seenIndex = allMessageIds.indexOf(status.lastSeenMessageId);
+        return seenIndex >= messageIndex;
+      })
+      .map(status => status.username);
+  }, [readStatuses]);
 
   return {
     onlineCount,
     onlineUsers,
     typingUsers,
+    readStatuses,
     setTyping,
+    markMessageSeen,
+    getSeenBy,
   };
 }
