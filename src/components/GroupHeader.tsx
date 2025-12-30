@@ -2,15 +2,28 @@ import { Copy, LogOut, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { BackgroundSelector } from '@/components/BackgroundSelector';
+import { BackgroundOption } from '@/hooks/useChatBackground';
 
 interface GroupHeaderProps {
   code: string;
   onLeave: () => void;
   onlineCount: number;
   username: string;
+  backgroundId: string;
+  backgroundOptions: BackgroundOption[];
+  onBackgroundChange: (id: string) => void;
 }
 
-export function GroupHeader({ code, onLeave, onlineCount, username }: GroupHeaderProps) {
+export function GroupHeader({ 
+  code, 
+  onLeave, 
+  onlineCount, 
+  username,
+  backgroundId,
+  backgroundOptions,
+  onBackgroundChange,
+}: GroupHeaderProps) {
   const copyCode = () => {
     navigator.clipboard.writeText(code);
     toast({
@@ -20,7 +33,7 @@ export function GroupHeader({ code, onLeave, onlineCount, username }: GroupHeade
   };
 
   return (
-    <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3">
+    <header className="flex items-center justify-between border-b border-border bg-card/90 backdrop-blur-sm px-4 py-3">
       <div className="flex items-center gap-3">
         <span className="text-sm text-muted-foreground">Group:</span>
         <code className="rounded bg-muted px-3 py-1.5 font-mono text-lg font-semibold text-foreground">
@@ -42,6 +55,11 @@ export function GroupHeader({ code, onLeave, onlineCount, username }: GroupHeade
         <span className="text-sm text-muted-foreground">
           Hi, <span className="font-medium text-foreground">{username}</span>
         </span>
+        <BackgroundSelector 
+          currentId={backgroundId}
+          options={backgroundOptions}
+          onSelect={onBackgroundChange}
+        />
         <ThemeToggle />
         <Button variant="ghost" size="sm" onClick={onLeave} className="text-muted-foreground hover:text-foreground">
           <LogOut className="mr-2 h-4 w-4" />
