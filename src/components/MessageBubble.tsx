@@ -53,14 +53,14 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
     
     if (isAI) {
       return (
-        <div className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg ring-2 ring-primary/20">
-          <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
+        <div className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg ring-2 ring-primary/20">
+          <Bot className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-primary-foreground" />
         </div>
       );
     }
     
     return (
-      <div className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-secondary flex items-center justify-center text-xs sm:text-sm font-medium text-muted-foreground">
+      <div className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-full bg-secondary flex items-center justify-center text-xs sm:text-sm lg:text-base font-medium text-muted-foreground">
         {message.username.charAt(0).toUpperCase()}
       </div>
     );
@@ -82,7 +82,7 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
   // File message
   if (message.message_type === 'file' && message.file_url) {
     return (
-      <div className={cn("group my-1.5 sm:my-2 max-w-[90%] sm:max-w-[80%] flex gap-2", isOwn && "ml-auto flex-row-reverse")}>
+      <div className={cn("group my-1.5 sm:my-2 lg:my-3 max-w-[90%] sm:max-w-[80%] lg:max-w-[70%] flex gap-2 lg:gap-3", isOwn && "ml-auto flex-row-reverse")}>
         {renderAvatar()}
         <div className="flex-1 min-w-0">
           <div className="mb-1">
@@ -150,7 +150,7 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
   // Code message
   if (message.message_type === 'code') {
     return (
-      <div className={cn("group relative my-1.5 sm:my-2 w-full flex gap-2", isOwn && "flex-row-reverse")}>
+      <div className={cn("group relative my-1.5 sm:my-2 lg:my-3 w-full lg:max-w-[85%] flex gap-2 lg:gap-3", isOwn && "flex-row-reverse ml-auto")}>
         {renderAvatar()}
         <div className="flex-1 min-w-0">
           <div className="mb-1 flex items-center gap-2">
@@ -190,12 +190,12 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
             >
               {({ style, tokens, getLineProps, getTokenProps }) => (
                 <pre 
-                  className="overflow-x-auto p-2 sm:p-4 text-xs sm:text-sm"
+                  className="overflow-x-auto p-2 sm:p-4 lg:p-5 text-xs sm:text-sm lg:text-base"
                   style={{ ...style, margin: 0, borderRadius: 0 }}
                 >
                   {tokens.map((line, i) => (
                     <div key={i} {...getLineProps({ line })}>
-                      <span className="mr-2 sm:mr-4 inline-block w-4 sm:w-6 select-none text-right text-muted-foreground/50 text-[10px] sm:text-sm">
+                      <span className="mr-2 sm:mr-4 lg:mr-6 inline-block w-4 sm:w-6 lg:w-8 select-none text-right text-muted-foreground/50 text-[10px] sm:text-sm lg:text-base">
                         {i + 1}
                       </span>
                       {line.map((token, key) => (
@@ -223,7 +223,7 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
 
   // Text message
   return (
-    <div className={cn("group my-1.5 sm:my-2 max-w-[90%] sm:max-w-[80%] flex gap-2", isOwn && "ml-auto flex-row-reverse")}>
+    <div className={cn("group my-1.5 sm:my-2 lg:my-3 max-w-[90%] sm:max-w-[80%] lg:max-w-[70%] flex gap-2 lg:gap-3", isOwn && "ml-auto flex-row-reverse")}>
       {renderAvatar()}
       <div className="flex-1 min-w-0">
         <div className="mb-1">
@@ -232,14 +232,14 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
           </span>
         </div>
         <div className={cn(
-          "rounded-lg px-3 py-2 sm:px-4 sm:py-2.5",
+          "rounded-lg px-3 py-2 sm:px-4 sm:py-2.5 lg:px-5 lg:py-3",
           isOwn 
             ? "bg-primary text-primary-foreground" 
             : isAI 
               ? "bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20" 
               : "bg-secondary"
         )}>
-          <p className="whitespace-pre-wrap break-words text-sm sm:text-base">{message.content}</p>
+          <p className="whitespace-pre-wrap break-words text-sm sm:text-base lg:text-[17px] lg:leading-relaxed">{message.content}</p>
         </div>
         <div className="mt-1">
           <time className="text-[10px] sm:text-xs text-muted-foreground">

@@ -68,7 +68,7 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
         style={backgroundStyle}
       >
       {/* Centered container for desktop */}
-      <div className="flex flex-col h-full w-full max-w-[1100px] mx-auto">
+      <div className="flex flex-col h-full w-full max-w-full md:max-w-[90%] lg:max-w-[1400px] mx-auto px-0 md:px-6 lg:px-8">
         <GroupHeader 
           code={groupCode} 
           onLeave={onLeave} 
