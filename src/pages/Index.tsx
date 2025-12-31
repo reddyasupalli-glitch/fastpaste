@@ -31,8 +31,8 @@ const Index = () => {
         error={error}
       />
       
-      {/* Asu Chat Section */}
-      <div className="px-4 pb-8">
+      {/* Asu Chat Button */}
+      <div className="flex justify-center pb-8">
         <AsuChat />
       </div>
       
