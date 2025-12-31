@@ -358,37 +358,37 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
                   "overflow-hidden rounded-lg border",
                   isAI ? "border-primary/30" : "border-border"
                 )}>
-                  <div className="flex items-center justify-between border-b border-border bg-secondary/50 px-1.5 sm:px-2 lg:px-3 py-0.5 sm:py-1 lg:py-1.5">
-                    <span className="text-[9px] sm:text-[10px] lg:text-xs font-medium text-muted-foreground">
+                  <div className="flex items-center justify-between border-b border-border bg-secondary/80 px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2">
+                    <span className="text-[10px] sm:text-xs lg:text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                       {part.language || 'Code'}
                     </span>
-                    <div className="flex items-center gap-0.5 sm:gap-1">
+                    <div className="flex items-center gap-1 sm:gap-2">
                       {isJavaScriptLike(part.language) && (
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => runCode(part.content, index)}
-                          className="h-5 sm:h-6 lg:h-7 gap-0.5 sm:gap-1 lg:gap-1.5 text-[9px] sm:text-[10px] lg:text-xs px-1 sm:px-1.5 lg:px-2 text-green-600 hover:text-green-700 hover:bg-green-500/10"
+                          className="h-6 sm:h-7 lg:h-8 gap-1 sm:gap-1.5 text-[10px] sm:text-xs lg:text-sm px-2 sm:px-3 bg-green-500/10 border-green-500/30 text-green-600 hover:text-green-700 hover:bg-green-500/20"
                         >
-                          <Play className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                          <span className="hidden sm:inline">Run</span>
+                          <Play className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                          <span>Run</span>
                         </Button>
                       )}
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => copyCodeBlock(part.content, index)}
-                        className="h-5 sm:h-6 lg:h-7 gap-0.5 sm:gap-1 lg:gap-1.5 text-[9px] sm:text-[10px] lg:text-xs px-1 sm:px-1.5 lg:px-2"
+                        className="h-6 sm:h-7 lg:h-8 gap-1 sm:gap-1.5 text-[10px] sm:text-xs lg:text-sm px-2 sm:px-3 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
                       >
                         {copiedIndex === index ? (
                           <>
-                            <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                            <span className="hidden sm:inline">Copied!</span>
+                            <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                            <span>Copied!</span>
                           </>
                         ) : (
                           <>
-                            <Copy className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                            <span className="hidden sm:inline">Copy</span>
+                            <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                            <span>Copy</span>
                           </>
                         )}
                       </Button>
