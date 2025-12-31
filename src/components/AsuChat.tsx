@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, Loader2, Trash2, X, MessageCircle } from 'lucide-react';
+import { Send, Bot, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,19 +13,10 @@ interface ChatMessage {
 }
 
 export function AsuChat() {
-  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [hasUnread, setHasUnread] = useState(true); // Show badge initially
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Clear badge when chat is opened
-  useEffect(() => {
-    if (isOpen) {
-      setHasUnread(false);
-    }
-  }, [isOpen]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -85,115 +76,86 @@ export function AsuChat() {
   };
 
   return (
-    <>
-      {/* Floating Chat Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative",
-          isOpen 
-            ? "bg-destructive text-destructive-foreground" 
-            : "bg-primary text-primary-foreground"
+    <div className="w-full max-w-md mx-auto bg-card/80 backdrop-blur-sm rounded-2xl border border-border shadow-xl overflow-hidden">
+      {/* Header */}
+      <div className="bg-primary/10 border-b border-border px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center">
+            <Bot className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground text-sm">Chat with Asu</h3>
+            <p className="text-[10px] text-muted-foreground">Ask me anything!</p>
+          </div>
+        </div>
+        {messages.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearChat}
+            className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
         )}
-      >
-        {isOpen ? (
-          <X className="w-6 h-6" />
-        ) : (
-          <>
-            <MessageCircle className="w-6 h-6" />
-            {hasUnread && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-bounce">
-                1
-              </span>
-            )}
-          </>
-        )}
-      </button>
+      </div>
 
-      {/* Chat Popup */}
-      {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-[350px] sm:w-[400px] bg-card/95 backdrop-blur-md rounded-2xl border border-border shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300">
-          {/* Header */}
-          <div className="bg-primary/10 border-b border-border px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center">
-                <Bot className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground text-sm">Chat with Asu</h3>
-                <p className="text-[10px] text-muted-foreground">Ask me anything!</p>
-              </div>
-            </div>
-            {messages.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearChat}
-                className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
+      {/* Messages */}
+      <ScrollArea className="h-[250px] p-3" ref={scrollRef}>
+        {messages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
+            <Bot className="w-10 h-10 mb-2 opacity-50" />
+            <p className="text-sm">Hey! Nenu Asu 👋</p>
+            <p className="text-xs mt-1">Ask me anything!</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={cn(
+                  "flex",
+                  message.role === 'user' ? 'justify-end' : 'justify-start'
+                )}
               >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+                <div
+                  className={cn(
+                    "max-w-[85%] rounded-2xl px-3 py-2 text-sm",
+                    message.role === 'user'
+                      ? 'bg-primary text-primary-foreground rounded-br-md'
+                      : 'bg-muted text-foreground rounded-bl-md'
+                  )}
+                >
+                  {message.content}
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-muted rounded-2xl rounded-bl-md px-3 py-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                </div>
+              </div>
             )}
           </div>
+        )}
+      </ScrollArea>
 
-          {/* Messages */}
-          <ScrollArea className="h-[280px] p-3" ref={scrollRef}>
-            {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
-                <Bot className="w-10 h-10 mb-2 opacity-50" />
-                <p className="text-sm">Hey! Nenu Asu 👋</p>
-                <p className="text-xs mt-1">Ask me anything!</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "flex",
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "max-w-[85%] rounded-2xl px-3 py-2 text-sm",
-                        message.role === 'user'
-                          ? 'bg-primary text-primary-foreground rounded-br-md'
-                          : 'bg-muted text-foreground rounded-bl-md'
-                      )}
-                    >
-                      {message.content}
-                    </div>
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted rounded-2xl rounded-bl-md px-3 py-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </ScrollArea>
-
-          {/* Input */}
-          <form onSubmit={sendMessage} className="border-t border-border p-3">
-            <div className="flex gap-2">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your message..."
-                disabled={isLoading}
-                className="flex-1 h-9 text-sm"
-              />
-              <Button type="submit" size="icon" disabled={!input.trim() || isLoading} className="h-9 w-9">
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-          </form>
+      {/* Input */}
+      <form onSubmit={sendMessage} className="border-t border-border p-3">
+        <div className="flex gap-2">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Type your message..."
+            disabled={isLoading}
+            className="flex-1 h-9 text-sm"
+          />
+          <Button type="submit" size="icon" disabled={!input.trim() || isLoading} className="h-9 w-9">
+            <Send className="w-4 h-4" />
+          </Button>
         </div>
-      )}
-    </>
+      </form>
+    </div>
   );
 }
