@@ -3,7 +3,6 @@ import { JoinCreateForm } from '@/components/JoinCreateForm';
 import { ChatRoom } from '@/components/ChatRoom';
 import { WelcomeDialog } from '@/components/WelcomeDialog';
 import { Footer } from '@/components/Footer';
-import { AsuChat } from '@/components/AsuChat';
 
 const Index = () => {
   const { group, loading, error, createGroup, joinGroup, leaveGroup } = useGroup();
@@ -30,12 +29,6 @@ const Index = () => {
         loading={loading}
         error={error}
       />
-      
-      {/* Asu Chat Button */}
-      <div className="flex justify-center pb-8">
-        <AsuChat />
-      </div>
-      
       <Footer />
     </>
   );

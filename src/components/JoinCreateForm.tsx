@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Plus, LogIn, History, Trash2, Clock, UserPlus, Crown, Pencil, Check, X, Info } from 'lucide-react';
 import { getGroupHistory, removeFromGroupHistory, updateGroupName, GroupHistoryItem } from '@/lib/groupHistory';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { AsuChat } from '@/components/AsuChat';
 import fastpasteLogo from '@/assets/fastpaste-logo.png';
 
 interface JoinCreateFormProps {
@@ -138,6 +139,10 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
             </Button>
           </form>
 
+          {/* Asu AI Chat Button */}
+          <div className="flex justify-center pt-2">
+            <AsuChat />
+          </div>
 
           {error && (
             <p className="text-center text-sm text-destructive">{error}</p>
