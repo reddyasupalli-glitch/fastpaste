@@ -352,24 +352,7 @@ export function useMessages(groupId: string | null, username: string | null) {
     fetchMessages();
   }, [fetchMessages]);
 
-  // Send welcome message from Asu when user first joins
-  useEffect(() => {
-    if (!groupId || !username || welcomeSentRef.current || loading) return;
-    
-    // Check if there are no messages or if Asu hasn't welcomed yet in this session
-    const hasWelcomeFromAsu = messages.some(
-      m => m.username === AI_NAME && m.content.includes("Welcome to the chat")
-    );
-    
-    // Only send welcome if this is a new/empty chat or first time user
-    if (messages.length === 0 && !hasWelcomeFromAsu) {
-      welcomeSentRef.current = true;
-      // Small delay to ensure the UI is ready
-      setTimeout(() => {
-        sendAIMessage(WELCOME_MESSAGE);
-      }, 1000);
-    }
-  }, [groupId, username, messages.length, loading, sendAIMessage]);
+  // Removed welcome message auto-send - Asu chat is now separate on home page
 
   // Subscribe to realtime updates - using a stable subscription
   useEffect(() => {

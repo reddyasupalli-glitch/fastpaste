@@ -17,7 +17,15 @@ export function AsuChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [hasUnread, setHasUnread] = useState(true); // Show badge initially
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Clear badge when chat is opened
+  useEffect(() => {
+    if (isOpen) {
+      setHasUnread(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -82,16 +90,23 @@ export function AsuChat() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110",
+          "fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative",
           isOpen 
             ? "bg-destructive text-destructive-foreground" 
-            : "bg-primary text-primary-foreground animate-pulse"
+            : "bg-primary text-primary-foreground"
         )}
       >
         {isOpen ? (
           <X className="w-6 h-6" />
         ) : (
-          <MessageCircle className="w-6 h-6" />
+          <>
+            <MessageCircle className="w-6 h-6" />
+            {hasUnread && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-bounce">
+                1
+              </span>
+            )}
+          </>
         )}
       </button>
 
