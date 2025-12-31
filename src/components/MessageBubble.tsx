@@ -53,14 +53,14 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
     
     if (isAI) {
       return (
-        <div className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg ring-2 ring-primary/20">
-          <Bot className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-primary-foreground" />
+        <div className="flex-shrink-0 h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg ring-2 ring-primary/20">
+          <Bot className="h-3 w-3 sm:h-4 sm:w-4 lg:h-6 lg:w-6 text-primary-foreground" />
         </div>
       );
     }
     
     return (
-      <div className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-full bg-secondary flex items-center justify-center text-xs sm:text-sm lg:text-base font-medium text-muted-foreground">
+      <div className="flex-shrink-0 h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 rounded-full bg-secondary flex items-center justify-center text-[10px] sm:text-sm lg:text-base font-medium text-muted-foreground">
         {message.username.charAt(0).toUpperCase()}
       </div>
     );
@@ -82,11 +82,11 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
   // File message
   if (message.message_type === 'file' && message.file_url) {
     return (
-      <div className={cn("group my-1.5 sm:my-2 lg:my-3 max-w-[90%] sm:max-w-[80%] lg:max-w-[70%] flex gap-2 lg:gap-3", isOwn && "ml-auto flex-row-reverse")}>
+      <div className={cn("group my-1 sm:my-1.5 lg:my-3 max-w-[85%] sm:max-w-[80%] lg:max-w-[70%] flex gap-1.5 sm:gap-2 lg:gap-3", isOwn && "ml-auto flex-row-reverse")}>
         {renderAvatar()}
         <div className="flex-1 min-w-0">
-          <div className="mb-1">
-            <span className={cn("text-[10px] sm:text-xs font-medium", isOwn ? 'text-primary' : 'text-muted-foreground')}>
+          <div className="mb-0.5 sm:mb-1">
+            <span className={cn("text-[9px] sm:text-[10px] lg:text-xs font-medium", isOwn ? 'text-primary' : 'text-muted-foreground')}>
               {renderUsername()}
             </span>
           </div>
@@ -97,15 +97,15 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
             {isImage ? (
               <div className="relative">
                 {!imageLoaded && (
-                  <div className="flex h-32 sm:h-48 items-center justify-center bg-muted">
-                    <ImageIcon className="h-6 w-6 sm:h-8 sm:w-8 animate-pulse text-muted-foreground" />
+                  <div className="flex h-24 sm:h-32 lg:h-48 items-center justify-center bg-muted">
+                    <ImageIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 animate-pulse text-muted-foreground" />
                   </div>
                 )}
                 <img
                   src={message.file_url}
                   alt={message.file_name || 'Image'}
                   className={cn(
-                    "max-h-48 sm:max-h-64 w-auto rounded-lg cursor-pointer transition-opacity",
+                    "max-h-36 sm:max-h-48 lg:max-h-64 w-auto rounded-lg cursor-pointer transition-opacity",
                     !imageLoaded && "hidden"
                   )}
                   onLoad={() => setImageLoaded(true)}
@@ -113,28 +113,28 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
                 />
               </div>
             ) : (
-              <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3">
-                <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary/20">
-                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 p-1.5 sm:p-2 lg:p-3">
+                <div className="flex h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 items-center justify-center rounded-lg bg-primary/20">
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="truncate font-medium text-xs sm:text-sm">{message.file_name}</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">{message.file_type}</p>
+                  <p className="truncate font-medium text-[10px] sm:text-xs lg:text-sm">{message.file_name}</p>
+                  <p className="text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground">{message.file_type}</p>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => window.open(message.file_url!, '_blank')}
                   title="Download file"
-                  className="h-8 w-8 sm:h-9 sm:w-9"
+                  className="h-6 w-6 sm:h-8 sm:w-8 lg:h-9 lg:w-9"
                 >
-                  <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <Download className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
                 </Button>
               </div>
             )}
           </div>
-          <div className="mt-1 flex items-center justify-between">
-            <time className="text-[10px] sm:text-xs text-muted-foreground">
+          <div className="mt-0.5 sm:mt-1 flex items-center justify-between">
+            <time className="text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground">
               {new Date(message.created_at).toLocaleTimeString()}
             </time>
           </div>
@@ -150,11 +150,11 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
   // Code message
   if (message.message_type === 'code') {
     return (
-      <div className={cn("group relative my-1.5 sm:my-2 lg:my-3 w-full lg:max-w-[85%] flex gap-2 lg:gap-3", isOwn && "flex-row-reverse ml-auto")}>
+      <div className={cn("group relative my-1 sm:my-1.5 lg:my-3 w-full lg:max-w-[85%] flex gap-1.5 sm:gap-2 lg:gap-3", isOwn && "flex-row-reverse ml-auto")}>
         {renderAvatar()}
         <div className="flex-1 min-w-0">
-          <div className="mb-1 flex items-center gap-2">
-            <span className={cn("text-[10px] sm:text-xs font-medium", isOwn ? 'text-primary' : 'text-muted-foreground')}>
+          <div className="mb-0.5 sm:mb-1 flex items-center gap-2">
+            <span className={cn("text-[9px] sm:text-[10px] lg:text-xs font-medium", isOwn ? 'text-primary' : 'text-muted-foreground')}>
               {renderUsername()}
             </span>
           </div>
@@ -162,22 +162,22 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
             "overflow-hidden rounded-lg border",
             isAI ? "border-primary/30" : "border-border"
           )}>
-            <div className="flex items-center justify-between border-b border-border bg-secondary/50 px-2 sm:px-3 py-1 sm:py-1.5">
-              <span className="text-[10px] sm:text-xs font-medium text-muted-foreground">Code</span>
+            <div className="flex items-center justify-between border-b border-border bg-secondary/50 px-1.5 sm:px-2 lg:px-3 py-0.5 sm:py-1 lg:py-1.5">
+              <span className="text-[9px] sm:text-[10px] lg:text-xs font-medium text-muted-foreground">Code</span>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={copyCode}
-                className="h-6 sm:h-7 gap-1 sm:gap-1.5 text-[10px] sm:text-xs px-1.5 sm:px-2"
+                className="h-5 sm:h-6 lg:h-7 gap-0.5 sm:gap-1 lg:gap-1.5 text-[9px] sm:text-[10px] lg:text-xs px-1 sm:px-1.5 lg:px-2"
               >
                 {copied ? (
                   <>
-                    <Check className="h-3 w-3" />
+                    <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                     <span className="hidden sm:inline">Copied</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="h-3 w-3" />
+                    <Copy className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                     <span className="hidden sm:inline">Copy</span>
                   </>
                 )}
@@ -190,12 +190,12 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
             >
               {({ style, tokens, getLineProps, getTokenProps }) => (
                 <pre 
-                  className="overflow-x-auto p-2 sm:p-4 lg:p-5 text-xs sm:text-sm lg:text-base"
+                  className="overflow-x-auto p-1.5 sm:p-3 lg:p-5 text-[10px] sm:text-xs lg:text-base"
                   style={{ ...style, margin: 0, borderRadius: 0 }}
                 >
                   {tokens.map((line, i) => (
                     <div key={i} {...getLineProps({ line })}>
-                      <span className="mr-2 sm:mr-4 lg:mr-6 inline-block w-4 sm:w-6 lg:w-8 select-none text-right text-muted-foreground/50 text-[10px] sm:text-sm lg:text-base">
+                      <span className="mr-1.5 sm:mr-3 lg:mr-6 inline-block w-3 sm:w-5 lg:w-8 select-none text-right text-muted-foreground/50 text-[9px] sm:text-xs lg:text-base">
                         {i + 1}
                       </span>
                       {line.map((token, key) => (
@@ -207,8 +207,8 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
               )}
             </Highlight>
           </div>
-          <div className="mt-1 flex items-center justify-between">
-            <time className="text-[10px] sm:text-xs text-muted-foreground">
+          <div className="mt-0.5 sm:mt-1 flex items-center justify-between">
+            <time className="text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground">
               {new Date(message.created_at).toLocaleTimeString()}
             </time>
           </div>
@@ -223,26 +223,26 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
 
   // Text message
   return (
-    <div className={cn("group my-1.5 sm:my-2 lg:my-3 max-w-[90%] sm:max-w-[80%] lg:max-w-[70%] flex gap-2 lg:gap-3", isOwn && "ml-auto flex-row-reverse")}>
+    <div className={cn("group my-1 sm:my-1.5 lg:my-3 max-w-[85%] sm:max-w-[80%] lg:max-w-[70%] flex gap-1.5 sm:gap-2 lg:gap-3", isOwn && "ml-auto flex-row-reverse")}>
       {renderAvatar()}
       <div className="flex-1 min-w-0">
-        <div className="mb-1">
-          <span className={cn("text-[10px] sm:text-xs font-medium", isOwn ? 'text-primary' : 'text-muted-foreground')}>
+        <div className="mb-0.5 sm:mb-1">
+          <span className={cn("text-[9px] sm:text-[10px] lg:text-xs font-medium", isOwn ? 'text-primary' : 'text-muted-foreground')}>
             {renderUsername()}
           </span>
         </div>
         <div className={cn(
-          "rounded-lg px-3 py-2 sm:px-4 sm:py-2.5 lg:px-5 lg:py-3",
+          "rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 lg:px-5 lg:py-3",
           isOwn 
             ? "bg-primary text-primary-foreground" 
             : isAI 
               ? "bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20" 
               : "bg-secondary"
         )}>
-          <p className="whitespace-pre-wrap break-words text-sm sm:text-base lg:text-[17px] lg:leading-relaxed">{message.content}</p>
+          <p className="whitespace-pre-wrap break-words text-xs sm:text-sm lg:text-[17px] lg:leading-relaxed">{message.content}</p>
         </div>
-        <div className="mt-1">
-          <time className="text-[10px] sm:text-xs text-muted-foreground">
+        <div className="mt-0.5 sm:mt-1">
+          <time className="text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground">
             {new Date(message.created_at).toLocaleTimeString()}
           </time>
         </div>
