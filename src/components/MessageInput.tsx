@@ -1,10 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Send, Code, Type, RotateCcw, X, Paperclip, Loader2, Mic, MicOff } from 'lucide-react';
+import { Send, Code, Type, RotateCcw, X, Paperclip, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
 import { toast } from '@/hooks/use-toast';
-import { useVoiceInput } from '@/hooks/useVoiceInput';
 
 interface FailedMessage {
   content: string;
@@ -44,27 +43,6 @@ export function MessageInput({ onSend, onSendFile, onTypingChange }: MessageInpu
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleVoiceResult = useCallback((transcript: string) => {
-    setContent(prev => prev ? `${prev} ${transcript}` : transcript);
-    toast({
-      title: '🎤 Voice captured',
-      description: transcript.substring(0, 50) + (transcript.length > 50 ? '...' : ''),
-    });
-  }, []);
-
-  const handleVoiceError = useCallback((error: string) => {
-    toast({
-      title: 'Voice input error',
-      description: error,
-      variant: 'destructive',
-    });
-  }, []);
-
-  const { isListening, isSupported, toggleListening } = useVoiceInput({
-    onResult: handleVoiceResult,
-    onError: handleVoiceError,
-  });
 
   const setTyping = useCallback((typing: boolean) => {
     if (isTypingRef.current !== typing) {
@@ -269,32 +247,12 @@ export function MessageInput({ onSend, onSendFile, onTypingChange }: MessageInpu
                 <Paperclip className="h-4 w-4" />
               )}
             </Button>
-            {isSupported && (
-              <Button
-                type="button"
-                variant={isListening ? "default" : "outline"}
-                size="icon"
-                onClick={toggleListening}
-                title={isListening ? "Stop listening" : "Start voice input (తెలుగు, हिंदी, English)"}
-                className={`h-9 w-9 sm:h-10 sm:w-10 transition-all ${
-                  isListening 
-                    ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
-                    : ''
-                }`}
-              >
-                {isListening ? (
-                  <MicOff className="h-4 w-4" />
-                ) : (
-                  <Mic className="h-4 w-4" />
-                )}
-              </Button>
-            )}
           </div>
           <Textarea
             value={content}
             onChange={(e) => handleContentChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isListening ? 'Listening... మాట్లాడండి 🎤' : (isCodeMode ? 'Paste your code here...' : 'Type a message...')}
+            placeholder={isCodeMode ? 'Paste your code here...' : 'Type a message...'}
             className={`min-h-[40px] sm:min-h-[44px] flex-1 resize-none text-sm sm:text-base ${isCodeMode ? 'font-mono' : ''}`}
             rows={isCodeMode ? 4 : 1}
           />
@@ -308,11 +266,9 @@ export function MessageInput({ onSend, onSendFile, onTypingChange }: MessageInpu
           </Button>
         </div>
         <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-muted-foreground text-center sm:text-left">
-          {isListening 
-            ? '🎤 Listening... Click mic to stop (Telugu, Hindi & English supported)'
-            : isCodeMode 
-              ? 'Code mode: Your message will be formatted as a code block' 
-              : 'Press Enter to send, Shift+Enter for new line • 🎤 for voice'}
+          {isCodeMode 
+            ? 'Code mode: Your message will be formatted as a code block' 
+            : 'Press Enter to send, Shift+Enter for new line'}
         </p>
       </div>
     </form>
