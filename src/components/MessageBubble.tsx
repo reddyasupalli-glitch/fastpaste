@@ -1,4 +1,4 @@
-import { Copy, Check, CheckCheck, Download, FileText, Image as ImageIcon, Bot } from 'lucide-react';
+import { Copy, Check, CheckCheck, Download, FileText, Image as ImageIcon, Bot, Play, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useCallback } from 'react';
 import { Highlight, themes } from 'prism-react-renderer';
@@ -21,6 +21,11 @@ interface ContentPart {
   type: 'text' | 'code';
   content: string;
   language?: string;
+}
+
+interface CodeOutput {
+  result: string;
+  isError: boolean;
 }
 
 // Parse message content to separate text and code blocks
@@ -65,10 +70,51 @@ function parseMessageContent(content: string): ContentPart[] {
   return parts;
 }
 
+// Check if language is JavaScript-like
+function isJavaScriptLike(language?: string): boolean {
+  const jsLangs = ['javascript', 'js', 'jsx', 'typescript', 'ts', 'tsx'];
+  return jsLangs.includes(language?.toLowerCase() || 'javascript');
+}
+
+// Safely execute JavaScript code
+function executeCode(code: string): CodeOutput {
+  try {
+    // Create a custom console to capture logs
+    const logs: string[] = [];
+    const customConsole = {
+      log: (...args: unknown[]) => logs.push(args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+      ).join(' ')),
+      error: (...args: unknown[]) => logs.push('Error: ' + args.map(String).join(' ')),
+      warn: (...args: unknown[]) => logs.push('Warning: ' + args.map(String).join(' ')),
+      info: (...args: unknown[]) => logs.push(args.map(String).join(' ')),
+    };
+
+    // Execute the code with custom console
+    const func = new Function('console', code);
+    const result = func(customConsole);
+    
+    // Combine logs and return value
+    let output = logs.join('\n');
+    if (result !== undefined) {
+      const resultStr = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
+      output = output ? `${output}\n→ ${resultStr}` : `→ ${resultStr}`;
+    }
+    
+    return { result: output || '(no output)', isError: false };
+  } catch (error) {
+    return { 
+      result: error instanceof Error ? error.message : 'Unknown error', 
+      isError: true 
+    };
+  }
+}
+
 export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onToggleReaction }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [codeOutputs, setCodeOutputs] = useState<Record<number, CodeOutput>>({});
 
   const isAI = message.username === AI_NAME;
 
@@ -82,6 +128,19 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
     navigator.clipboard.writeText(code);
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 2000);
+  }, []);
+
+  const runCode = useCallback((code: string, index: number) => {
+    const output = executeCode(code);
+    setCodeOutputs(prev => ({ ...prev, [index]: output }));
+  }, []);
+
+  const clearOutput = useCallback((index: number) => {
+    setCodeOutputs(prev => {
+      const newOutputs = { ...prev };
+      delete newOutputs[index];
+      return newOutputs;
+    });
   }, []);
 
   const isImage = message.file_type?.startsWith('image/');
@@ -294,56 +353,98 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
         <div className="space-y-2">
           {contentParts.map((part, index) => (
             part.type === 'code' ? (
-              <div key={index} className={cn(
-                "overflow-hidden rounded-lg border",
-                isAI ? "border-primary/30" : "border-border"
-              )}>
-                <div className="flex items-center justify-between border-b border-border bg-secondary/50 px-1.5 sm:px-2 lg:px-3 py-0.5 sm:py-1 lg:py-1.5">
-                  <span className="text-[9px] sm:text-[10px] lg:text-xs font-medium text-muted-foreground">
-                    {part.language || 'Code'}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyCodeBlock(part.content, index)}
-                    className="h-5 sm:h-6 lg:h-7 gap-0.5 sm:gap-1 lg:gap-1.5 text-[9px] sm:text-[10px] lg:text-xs px-1 sm:px-1.5 lg:px-2"
+              <div key={index} className="space-y-1">
+                <div className={cn(
+                  "overflow-hidden rounded-lg border",
+                  isAI ? "border-primary/30" : "border-border"
+                )}>
+                  <div className="flex items-center justify-between border-b border-border bg-secondary/50 px-1.5 sm:px-2 lg:px-3 py-0.5 sm:py-1 lg:py-1.5">
+                    <span className="text-[9px] sm:text-[10px] lg:text-xs font-medium text-muted-foreground">
+                      {part.language || 'Code'}
+                    </span>
+                    <div className="flex items-center gap-0.5 sm:gap-1">
+                      {isJavaScriptLike(part.language) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => runCode(part.content, index)}
+                          className="h-5 sm:h-6 lg:h-7 gap-0.5 sm:gap-1 lg:gap-1.5 text-[9px] sm:text-[10px] lg:text-xs px-1 sm:px-1.5 lg:px-2 text-green-600 hover:text-green-700 hover:bg-green-500/10"
+                        >
+                          <Play className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          <span className="hidden sm:inline">Run</span>
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyCodeBlock(part.content, index)}
+                        className="h-5 sm:h-6 lg:h-7 gap-0.5 sm:gap-1 lg:gap-1.5 text-[9px] sm:text-[10px] lg:text-xs px-1 sm:px-1.5 lg:px-2"
+                      >
+                        {copiedIndex === index ? (
+                          <>
+                            <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <span className="hidden sm:inline">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <span className="hidden sm:inline">Copy</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  <Highlight
+                    theme={themes.nightOwl}
+                    code={part.content}
+                    language={part.language || 'javascript'}
                   >
-                    {copiedIndex === index ? (
-                      <>
-                        <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                        <span className="hidden sm:inline">Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                        <span className="hidden sm:inline">Copy</span>
-                      </>
+                    {({ style, tokens, getLineProps, getTokenProps }) => (
+                      <pre 
+                        className="overflow-x-auto p-1.5 sm:p-3 lg:p-5 text-[10px] sm:text-xs lg:text-sm"
+                        style={{ ...style, margin: 0, borderRadius: 0 }}
+                      >
+                        {tokens.map((line, i) => (
+                          <div key={i} {...getLineProps({ line })}>
+                            <span className="mr-1.5 sm:mr-3 lg:mr-6 inline-block w-3 sm:w-5 lg:w-8 select-none text-right text-muted-foreground/50 text-[9px] sm:text-xs lg:text-sm">
+                              {i + 1}
+                            </span>
+                            {line.map((token, key) => (
+                              <span key={key} {...getTokenProps({ token })} />
+                            ))}
+                          </div>
+                        ))}
+                      </pre>
                     )}
-                  </Button>
+                  </Highlight>
                 </div>
-                <Highlight
-                  theme={themes.nightOwl}
-                  code={part.content}
-                  language={part.language || 'javascript'}
-                >
-                  {({ style, tokens, getLineProps, getTokenProps }) => (
-                    <pre 
-                      className="overflow-x-auto p-1.5 sm:p-3 lg:p-5 text-[10px] sm:text-xs lg:text-sm"
-                      style={{ ...style, margin: 0, borderRadius: 0 }}
-                    >
-                      {tokens.map((line, i) => (
-                        <div key={i} {...getLineProps({ line })}>
-                          <span className="mr-1.5 sm:mr-3 lg:mr-6 inline-block w-3 sm:w-5 lg:w-8 select-none text-right text-muted-foreground/50 text-[9px] sm:text-xs lg:text-sm">
-                            {i + 1}
-                          </span>
-                          {line.map((token, key) => (
-                            <span key={key} {...getTokenProps({ token })} />
-                          ))}
+                
+                {/* Code Output */}
+                {codeOutputs[index] && (
+                  <div className={cn(
+                    "rounded-lg border p-2 sm:p-3 text-[10px] sm:text-xs lg:text-sm font-mono",
+                    codeOutputs[index].isError 
+                      ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400" 
+                      : "bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400"
+                  )}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[9px] sm:text-[10px] font-semibold mb-1 opacity-70">
+                          {codeOutputs[index].isError ? '❌ Error' : '✅ Output'}
                         </div>
-                      ))}
-                    </pre>
-                  )}
-                </Highlight>
+                        <pre className="whitespace-pre-wrap break-words">{codeOutputs[index].result}</pre>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => clearOutput(index)}
+                        className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0 opacity-60 hover:opacity-100"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div key={index} className={cn(
