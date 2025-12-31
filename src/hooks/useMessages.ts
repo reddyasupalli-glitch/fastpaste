@@ -6,9 +6,24 @@ const AI_NAME = 'Asu';
 const AI_TRIGGER_PATTERNS = [/@Asu\s*/i, /\/Asu\s*/i];
 const HELP_TRIGGERS = ['help', '?', 'commands'];
 
-const HELP_MESSAGE = `Hey there! I'm Asu, your AI assistant in this chat. Here's how you can interact with me:
+const WELCOME_MESSAGE = `Hey! Nenu Asu, mee AI friend in FastPaste! 🎉
 
-**How to ask me questions:**
+Welcome to the chat! Meeku em help kavali ante just ask cheyandi.
+
+**Nannu ela use cheyyalo:**
+• Type \`@Asu\` followed by your question
+• Or use \`/Asu\` followed by your question
+
+**Examples:**
+• \`@Asu What is JavaScript?\`
+• \`/Asu Tell me a joke\`
+• \`@Asu Help me with coding\`
+
+Inka em doubt unte cheppandi, nenu help chestanu! Happy chatting! 🤖✨`;
+
+const HELP_MESSAGE = `Hey! Nenu Asu, mee AI assistant in this chat. Meeru nannu ela use cheyyalo cheptanu:
+
+**Nannu ela ask cheyyalo:**
 • Type \`@Asu\` followed by your question
 • Or use \`/Asu\` followed by your question
 
@@ -20,7 +35,7 @@ const HELP_MESSAGE = `Hey there! I'm Asu, your AI assistant in this chat. Here's
 **Commands:**
 • \`@Asu help\` - Show this help message
 
-I can help with answering questions, providing information, having conversations, and more. Just ask! 🤖`;
+Nenu questions answer cheyadam, information provide cheyadam, conversations lo help cheyadam - ivi anni chestanu. Just ask! 🤖`;
 
 export interface Message {
   id: string;
@@ -42,6 +57,7 @@ export function useMessages(groupId: string | null, username: string | null) {
   const isSubscribedRef = useRef(false);
   const isMountedRef = useRef(true);
   const messagesRef = useRef<Message[]>([]);
+  const welcomeSentRef = useRef(false);
 
   // Keep messagesRef in sync
   useEffect(() => {
@@ -335,6 +351,25 @@ export function useMessages(groupId: string | null, username: string | null) {
   useEffect(() => {
     fetchMessages();
   }, [fetchMessages]);
+
+  // Send welcome message from Asu when user first joins
+  useEffect(() => {
+    if (!groupId || !username || welcomeSentRef.current || loading) return;
+    
+    // Check if there are no messages or if Asu hasn't welcomed yet in this session
+    const hasWelcomeFromAsu = messages.some(
+      m => m.username === AI_NAME && m.content.includes("Welcome to the chat")
+    );
+    
+    // Only send welcome if this is a new/empty chat or first time user
+    if (messages.length === 0 && !hasWelcomeFromAsu) {
+      welcomeSentRef.current = true;
+      // Small delay to ensure the UI is ready
+      setTimeout(() => {
+        sendAIMessage(WELCOME_MESSAGE);
+      }, 1000);
+    }
+  }, [groupId, username, messages.length, loading, sendAIMessage]);
 
   // Subscribe to realtime updates - using a stable subscription
   useEffect(() => {
