@@ -1,17 +1,19 @@
-import { useRef, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Reply } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLongPress } from '@/hooks/useLongPress';
 
 interface SwipeableMessageProps {
   children: React.ReactNode;
   onSwipeReply: () => void;
+  onLongPress?: (position: { x: number; y: number }) => void;
   disabled?: boolean;
 }
 
 const SWIPE_THRESHOLD = 60;
 
-export function SwipeableMessage({ children, onSwipeReply, disabled = false }: SwipeableMessageProps) {
+export function SwipeableMessage({ children, onSwipeReply, onLongPress, disabled = false }: SwipeableMessageProps) {
   const x = useMotionValue(0);
   const [isSwiping, setIsSwiping] = useState(false);
   
@@ -35,12 +37,26 @@ export function SwipeableMessage({ children, onSwipeReply, disabled = false }: S
     setIsSwiping(true);
   }, []);
 
+  const longPressHandlers = useLongPress({
+    delay: 500,
+    onLongPress: (position) => {
+      onLongPress?.(position);
+    },
+  });
+
   if (disabled) {
-    return <>{children}</>;
+    return (
+      <div {...(onLongPress ? longPressHandlers : {})}>
+        {children}
+      </div>
+    );
   }
 
   return (
-    <div className="relative overflow-hidden touch-pan-y">
+    <div 
+      className="relative overflow-hidden touch-pan-y"
+      {...(onLongPress ? longPressHandlers : {})}
+    >
       {/* Reply indicator */}
       <motion.div
         style={{ opacity: iconOpacity, scale: iconScale, x: iconX }}
