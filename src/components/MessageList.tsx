@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { MessageBubble } from './MessageBubble';
+import { SwipeableMessage } from './SwipeableMessage';
 import type { Message } from '@/hooks/useMessages';
 import type { ReactionGroup } from '@/hooks/useReactions';
 
@@ -11,6 +12,7 @@ interface MessageListProps {
   getSeenBy?: (messageId: string) => string[];
   getReactionsForMessage?: (messageId: string) => ReactionGroup[];
   onToggleReaction?: (messageId: string, emoji: string) => void;
+  onSwipeReply?: (messageId: string, username: string, content: string) => void;
 }
 
 export function MessageList({ 
@@ -21,6 +23,7 @@ export function MessageList({
   getSeenBy,
   getReactionsForMessage,
   onToggleReaction,
+  onSwipeReply,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -64,15 +67,26 @@ export function MessageList({
             message.username === currentUsername && 
             messages.slice(index + 1).every(m => m.username !== currentUsername);
           
+          const handleSwipe = () => {
+            if (onSwipeReply) {
+              onSwipeReply(message.id, message.username, message.content);
+            }
+          };
+          
           return (
-            <MessageBubble 
-              key={message.id} 
-              message={message} 
-              isOwn={message.username === currentUsername}
-              seenBy={isLastOwnMessage && getSeenBy ? getSeenBy(message.id) : undefined}
-              reactions={getReactionsForMessage ? getReactionsForMessage(message.id) : undefined}
-              onToggleReaction={onToggleReaction ? (emoji) => onToggleReaction(message.id, emoji) : undefined}
-            />
+            <SwipeableMessage
+              key={message.id}
+              onSwipeReply={handleSwipe}
+              disabled={!onSwipeReply}
+            >
+              <MessageBubble 
+                message={message} 
+                isOwn={message.username === currentUsername}
+                seenBy={isLastOwnMessage && getSeenBy ? getSeenBy(message.id) : undefined}
+                reactions={getReactionsForMessage ? getReactionsForMessage(message.id) : undefined}
+                onToggleReaction={onToggleReaction ? (emoji) => onToggleReaction(message.id, emoji) : undefined}
+              />
+            </SwipeableMessage>
           );
         })}
         <div ref={bottomRef} />

@@ -4,16 +4,28 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
 import { toast } from '@/hooks/use-toast';
+import { AnimatePresence } from 'framer-motion';
+import { AsuMentionSuggestion } from './AsuMentionSuggestion';
+import { PassiveAsuSuggestion } from './PassiveAsuSuggestion';
+import { QuotedMessage } from './QuotedMessage';
 
 interface FailedMessage {
   content: string;
   type: 'text' | 'code';
 }
 
+interface QuotedMessageData {
+  messageId: string;
+  username: string;
+  content: string;
+}
+
 interface MessageInputProps {
   onSend: (content: string, type: 'text' | 'code') => Promise<boolean>;
   onSendFile?: (file: File) => Promise<boolean>;
   onTypingChange?: (isTyping: boolean) => void;
+  quotedMessage?: QuotedMessageData | null;
+  onDismissQuote?: () => void;
 }
 
 const ALLOWED_FILE_TYPES = [
@@ -33,16 +45,48 @@ const ALLOWED_FILE_TYPES = [
 ];
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const PASSIVE_SUGGEST_DELAY = 1500; // 1.5 seconds
 
-export function MessageInput({ onSend, onSendFile, onTypingChange }: MessageInputProps) {
+export function MessageInput({ onSend, onSendFile, onTypingChange, quotedMessage, onDismissQuote }: MessageInputProps) {
   const [content, setContent] = useState('');
   const [isCodeMode, setIsCodeMode] = useState(false);
   const [sending, setSending] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [failedMessage, setFailedMessage] = useState<FailedMessage | null>(null);
+  const [showMentionSuggestion, setShowMentionSuggestion] = useState(false);
+  const [showPassiveSuggestion, setShowPassiveSuggestion] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const passiveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-insert @asu when quote is set
+  useEffect(() => {
+    if (quotedMessage && !content.includes('@asu')) {
+      setContent('@asu ');
+      textareaRef.current?.focus();
+    }
+  }, [quotedMessage]);
+
+  // Handle passive suggestion
+  useEffect(() => {
+    if (isFocused && content.trim() === '') {
+      passiveTimeoutRef.current = setTimeout(() => {
+        setShowPassiveSuggestion(true);
+      }, PASSIVE_SUGGEST_DELAY);
+    } else {
+      setShowPassiveSuggestion(false);
+    }
+
+    return () => {
+      if (passiveTimeoutRef.current) {
+        clearTimeout(passiveTimeoutRef.current);
+      }
+    };
+  }, [isFocused, content]);
 
   const setTyping = useCallback((typing: boolean) => {
     if (isTypingRef.current !== typing) {
@@ -53,6 +97,24 @@ export function MessageInput({ onSend, onSendFile, onTypingChange }: MessageInpu
 
   const handleContentChange = (value: string) => {
     setContent(value);
+    setShowPassiveSuggestion(false);
+    
+    // Check for @ mention at cursor position or end
+    const cursorPos = textareaRef.current?.selectionStart ?? value.length;
+    const textBeforeCursor = value.slice(0, cursorPos);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    
+    if (lastAtIndex !== -1) {
+      const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1);
+      // Show suggestion if @ is at end or followed by partial "asu" match
+      if (textAfterAt === '' || 'asu'.startsWith(textAfterAt.toLowerCase())) {
+        setShowMentionSuggestion(true);
+      } else {
+        setShowMentionSuggestion(false);
+      }
+    } else {
+      setShowMentionSuggestion(false);
+    }
     
     if (value.trim()) {
       setTyping(true);
@@ -69,10 +131,47 @@ export function MessageInput({ onSend, onSendFile, onTypingChange }: MessageInpu
     }
   };
 
+  const insertAsuMention = useCallback(() => {
+    const cursorPos = textareaRef.current?.selectionStart ?? content.length;
+    const textBeforeCursor = content.slice(0, cursorPos);
+    const textAfterCursor = content.slice(cursorPos);
+    
+    // Find the @ position to replace
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    
+    let newContent: string;
+    let newCursorPos: number;
+    
+    if (lastAtIndex !== -1) {
+      // Replace from @ to cursor with @asu
+      newContent = textBeforeCursor.slice(0, lastAtIndex) + '@asu ' + textAfterCursor;
+      newCursorPos = lastAtIndex + 5; // Position after "@asu "
+    } else {
+      // Just prepend @asu
+      newContent = '@asu ' + content;
+      newCursorPos = 5;
+    }
+    
+    setContent(newContent);
+    setShowMentionSuggestion(false);
+    setShowPassiveSuggestion(false);
+    
+    // Focus and set cursor position
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 0);
+  }, [content]);
+
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
+      }
+      if (passiveTimeoutRef.current) {
+        clearTimeout(passiveTimeoutRef.current);
       }
       setTyping(false);
     };
@@ -83,18 +182,28 @@ export function MessageInput({ onSend, onSendFile, onTypingChange }: MessageInpu
     if (!content.trim() || sending) return;
 
     setTyping(false);
+    setShowMentionSuggestion(false);
+    setShowPassiveSuggestion(false);
+    
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
     setSending(true);
-    const messageContent = content;
+    
+    // Build message with quote context if present
+    let messageContent = content;
+    if (quotedMessage) {
+      messageContent = `[Replying to ${quotedMessage.username}: "${quotedMessage.content.slice(0, 100)}${quotedMessage.content.length > 100 ? '...' : ''}"]\n\n${content}`;
+    }
+    
     const messageType = isCodeMode ? 'code' : 'text';
     
     const success = await onSend(messageContent, messageType);
     if (success) {
       setContent('');
       setFailedMessage(null);
+      onDismissQuote?.();
     } else {
       setFailedMessage({ content: messageContent, type: messageType });
       toast({
@@ -185,11 +294,52 @@ export function MessageInput({ onSend, onSendFile, onTypingChange }: MessageInpu
       e.preventDefault();
       handleSubmit(e);
     }
+    // Dismiss suggestions on Escape
+    if (e.key === 'Escape') {
+      setShowMentionSuggestion(false);
+      setShowPassiveSuggestion(false);
+    }
+  };
+
+  const handleFocus = () => {
+    setIsFocused(true);
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    // Delay hiding to allow click on suggestion
+    setTimeout(() => {
+      setShowMentionSuggestion(false);
+      setShowPassiveSuggestion(false);
+    }, 200);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-border bg-card/90 backdrop-blur-sm p-2 sm:p-3 md:p-4">
-      <div className="mx-auto w-full max-w-4xl">
+    <form onSubmit={handleSubmit} className="border-t border-border bg-card/90 backdrop-blur-sm p-2 sm:p-3 md:p-4 relative">
+      <div className="mx-auto w-full max-w-4xl relative">
+        {/* @asu Mention Suggestion */}
+        <AsuMentionSuggestion 
+          isVisible={showMentionSuggestion} 
+          onSelect={insertAsuMention} 
+        />
+        
+        {/* Passive ASU Suggestion */}
+        <PassiveAsuSuggestion 
+          isVisible={showPassiveSuggestion && !showMentionSuggestion} 
+          onSelect={insertAsuMention} 
+        />
+
+        {/* Quoted Message */}
+        <AnimatePresence>
+          {quotedMessage && onDismissQuote && (
+            <QuotedMessage
+              username={quotedMessage.username}
+              content={quotedMessage.content}
+              onDismiss={onDismissQuote}
+            />
+          )}
+        </AnimatePresence>
+
         {failedMessage && (
           <div className="mb-2 sm:mb-3 flex items-center gap-2 rounded-md bg-destructive/10 p-2 text-sm text-destructive">
             <span className="flex-1 text-xs sm:text-sm">Message failed to send</span>
@@ -249,10 +399,13 @@ export function MessageInput({ onSend, onSendFile, onTypingChange }: MessageInpu
             </Button>
           </div>
           <Textarea
+            ref={textareaRef}
             value={content}
             onChange={(e) => handleContentChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isCodeMode ? 'Paste your code here...' : 'Type a message...'}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            placeholder={isCodeMode ? 'Paste your code here...' : 'Type @ to mention ASU...'}
             className={`min-h-[40px] sm:min-h-[44px] flex-1 resize-none text-sm sm:text-base ${isCodeMode ? 'font-mono' : ''}`}
             rows={isCodeMode ? 4 : 1}
           />
@@ -268,7 +421,7 @@ export function MessageInput({ onSend, onSendFile, onTypingChange }: MessageInpu
         <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-muted-foreground text-center sm:text-left">
           {isCodeMode 
             ? 'Code mode: Your message will be formatted as a code block' 
-            : 'Press Enter to send, Shift+Enter for new line'}
+            : 'Type @ for AI · Swipe message to reply'}
         </p>
       </div>
     </form>

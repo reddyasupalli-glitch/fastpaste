@@ -11,6 +11,7 @@ import { usePresence } from '@/hooks/usePresence';
 import { useUsername } from '@/hooks/useUsername';
 import { useChatBackground } from '@/hooks/useChatBackground';
 import { useReactions } from '@/hooks/useReactions';
+import { useSwipeToReply } from '@/hooks/useSwipeToReply';
 import { cn } from '@/lib/utils';
 
 interface ChatRoomProps {
@@ -24,6 +25,7 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
   const { messages, loading, isAIThinking, sendMessage, sendFileMessage } = useMessages(groupId, username);
   const { onlineCount, typingUsers, setTyping, markMessageSeen, getSeenBy } = usePresence(groupId, username);
   const { fetchReactions, toggleReaction, getReactionsForMessage } = useReactions(groupId, username);
+  const { quotedMessage, handleSwipeReply, dismissQuote } = useSwipeToReply();
   const { 
     backgroundId, 
     setBackground, 
@@ -89,12 +91,15 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
           getSeenBy={handleGetSeenBy}
           getReactionsForMessage={getReactionsForMessage}
           onToggleReaction={handleToggleReaction}
+          onSwipeReply={handleSwipeReply}
         />
         <TypingIndicator typingUsers={typingUsers} isAIThinking={isAIThinking} />
         <MessageInput 
           onSend={sendMessage} 
           onSendFile={sendFileMessage}
-          onTypingChange={setTyping} 
+          onTypingChange={setTyping}
+          quotedMessage={quotedMessage}
+          onDismissQuote={dismissQuote}
         />
       </div>
     </div>
