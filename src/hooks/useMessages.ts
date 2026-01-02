@@ -461,12 +461,39 @@ export function useMessages(groupId: string | null, username: string | null) {
     };
   }, [groupId]);
 
+  const deleteMessage = useCallback(async (messageId: string): Promise<boolean> => {
+    if (!groupId || !isMountedRef.current) return false;
+
+    // Optimistically remove
+    safeSetMessages((prev) => prev.filter((m) => m.id !== messageId));
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', messageId);
+
+      if (error) {
+        console.error('Error deleting message:', error);
+        // Refetch to restore
+        fetchMessages();
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('Error deleting message:', err);
+      fetchMessages();
+      return false;
+    }
+  }, [groupId, safeSetMessages, fetchMessages]);
+
   return {
     messages,
     loading,
     isAIThinking,
     sendMessage,
     sendFileMessage,
+    deleteMessage,
     refetch: fetchMessages,
   };
 }

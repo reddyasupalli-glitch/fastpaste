@@ -1,5 +1,7 @@
-import { Copy, LogOut, Users } from 'lucide-react';
+import { useState } from 'react';
+import { Copy, LogOut, Users, Pencil, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { BackgroundSelector } from '@/components/BackgroundSelector';
@@ -10,6 +12,7 @@ interface GroupHeaderProps {
   onLeave: () => void;
   onlineCount: number;
   username: string;
+  onUsernameChange: (name: string) => void;
   backgroundId: string;
   backgroundOptions: BackgroundOption[];
   onBackgroundChange: (id: string) => void;
@@ -22,18 +25,39 @@ export function GroupHeader({
   onLeave, 
   onlineCount, 
   username,
+  onUsernameChange,
   backgroundId,
   backgroundOptions,
   onBackgroundChange,
   onAddCustomBackground,
   onRemoveCustomBackground,
 }: GroupHeaderProps) {
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(username);
+
   const copyCode = () => {
     navigator.clipboard.writeText(code);
     toast({
       title: 'Copied!',
       description: 'Group code copied to clipboard',
     });
+  };
+
+  const handleSaveName = () => {
+    const trimmed = editedName.trim();
+    if (trimmed && trimmed !== username) {
+      onUsernameChange(trimmed);
+      toast({
+        title: 'Name updated',
+        description: `Your name is now "${trimmed}"`,
+      });
+    }
+    setIsEditingName(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditedName(username);
+    setIsEditingName(false);
   };
 
   return (
@@ -61,10 +85,36 @@ export function GroupHeader({
       
       {/* Right section - Username, settings, and leave */}
       <div className="flex items-center gap-1 sm:gap-1.5 md:gap-3 flex-shrink-0">
-        <span className="hidden md:inline text-sm text-muted-foreground">
-          Hi, <span className="font-medium text-foreground">{username}</span>
-        </span>
-        <BackgroundSelector 
+        {isEditingName ? (
+          <div className="flex items-center gap-1">
+            <Input
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              className="h-7 w-24 sm:w-32 text-sm"
+              maxLength={50}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveName();
+                if (e.key === 'Escape') handleCancelEdit();
+              }}
+            />
+            <Button variant="ghost" size="icon" onClick={handleSaveName} className="h-6 w-6">
+              <Check className="h-3.5 w-3.5 text-green-500" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleCancelEdit} className="h-6 w-6">
+              <X className="h-3.5 w-3.5 text-destructive" />
+            </Button>
+          </div>
+        ) : (
+          <button 
+            onClick={() => setIsEditingName(true)}
+            className="hidden md:flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Hi, <span className="font-medium text-foreground">{username}</span>
+            <Pencil className="h-3 w-3 opacity-50" />
+          </button>
+        )}
+        <BackgroundSelector
           currentId={backgroundId}
           options={backgroundOptions}
           onSelect={onBackgroundChange}
