@@ -22,7 +22,7 @@ interface ChatRoomProps {
 
 export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
   const { username, setUsername, hasUsername } = useUsername();
-  const { messages, loading, isAIThinking, sendMessage, sendFileMessage } = useMessages(groupId, username);
+  const { messages, loading, isAIThinking, sendMessage, sendFileMessage, deleteMessage } = useMessages(groupId, username);
   const { onlineCount, typingUsers, setTyping, markMessageSeen, getSeenBy } = usePresence(groupId, username);
   const { fetchReactions, toggleReaction, getReactionsForMessage } = useReactions(groupId, username);
   const { quotedMessage, handleSwipeReply, dismissQuote } = useSwipeToReply();
@@ -52,6 +52,10 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
     toggleReaction(messageId, emoji);
   }, [toggleReaction]);
 
+  const handleDeleteMessage = useCallback((messageId: string) => {
+    deleteMessage(messageId);
+  }, [deleteMessage]);
+
   if (!hasUsername) {
     return <UsernamePrompt onSubmit={setUsername} />;
   }
@@ -77,6 +81,7 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
           onLeave={onLeave} 
           onlineCount={onlineCount} 
           username={username}
+          onUsernameChange={setUsername}
           backgroundId={backgroundId}
           backgroundOptions={backgroundOptions}
           onBackgroundChange={setBackground}
@@ -92,6 +97,7 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
           getReactionsForMessage={getReactionsForMessage}
           onToggleReaction={handleToggleReaction}
           onSwipeReply={handleSwipeReply}
+          onDeleteMessage={handleDeleteMessage}
         />
         <TypingIndicator typingUsers={typingUsers} isAIThinking={isAIThinking} />
         <MessageInput 
