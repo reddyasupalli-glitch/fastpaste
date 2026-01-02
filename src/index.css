@@ -39,20 +39,18 @@ All colors MUST be HSL.
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Glass theme variables */
+    --glass-bg: 0 0% 100% / 0.7;
+    --glass-border: 0 0% 100% / 0.3;
+    --glass-glow: 217 91% 60%;
   }
 
   .dark {
@@ -91,6 +89,11 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Glass theme variables - dark mode */
+    --glass-bg: 222 84% 8% / 0.6;
+    --glass-border: 217 91% 60% / 0.2;
+    --glass-glow: 217 91% 60%;
   }
 }
 
@@ -102,4 +105,63 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Glass theme styles */
+.theme-glass {
+  --radius: 0.75rem;
+}
+
+.theme-glass .glass-card {
+  @apply backdrop-blur-xl border border-white/20 shadow-xl;
+  background: hsl(var(--glass-bg));
+  box-shadow: 
+    0 0 20px hsl(var(--glass-glow) / 0.1),
+    inset 0 1px 0 hsl(0 0% 100% / 0.1);
+}
+
+.theme-glass .glass-input {
+  @apply backdrop-blur-md border border-white/20;
+  background: hsl(var(--glass-bg));
+}
+
+.theme-glass .glass-button {
+  @apply backdrop-blur-md border border-white/30;
+  background: hsl(var(--glass-glow) / 0.2);
+  box-shadow: 0 0 20px hsl(var(--glass-glow) / 0.3);
+}
+
+.theme-glass .glass-button:hover {
+  background: hsl(var(--glass-glow) / 0.3);
+  box-shadow: 0 0 30px hsl(var(--glass-glow) / 0.4);
+}
+
+/* Classic theme styles */
+.theme-classic {
+  --radius: 0.25rem;
+}
+
+.theme-classic .classic-card {
+  @apply border border-border bg-card shadow-sm;
+}
+
+.theme-classic .classic-input {
+  @apply border border-input bg-background;
+}
+
+/* Gradient backgrounds */
+.gradient-bg-glass {
+  background: linear-gradient(135deg, 
+    hsl(222 84% 8%) 0%, 
+    hsl(240 20% 12%) 50%, 
+    hsl(280 30% 15%) 100%
+  );
+}
+
+.gradient-bg-glass-light {
+  background: linear-gradient(135deg, 
+    hsl(220 30% 96%) 0%, 
+    hsl(240 20% 98%) 50%, 
+    hsl(280 20% 96%) 100%
+  );
 }

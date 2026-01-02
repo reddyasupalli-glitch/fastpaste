@@ -7,7 +7,9 @@ import { Separator } from '@/components/ui/separator';
 import { Plus, LogIn, History, Trash2, Clock, UserPlus, Crown, Pencil, Check, X, Info } from 'lucide-react';
 import { getGroupHistory, removeFromGroupHistory, updateGroupName, GroupHistoryItem } from '@/lib/groupHistory';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { StyleThemeToggle } from '@/components/StyleThemeToggle';
 import { AsuChat } from '@/components/AsuChat';
+import { useStyleTheme } from '@/contexts/StyleThemeContext';
 import fastpasteLogo from '@/assets/fastpaste-logo.png';
 
 interface JoinCreateFormProps {
@@ -22,6 +24,7 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
   const [history, setHistory] = useState<GroupHistoryItem[]>([]);
   const [editingCode, setEditingCode] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const { styleTheme } = useStyleTheme();
 
   useEffect(() => {
     setHistory(getGroupHistory());
@@ -78,9 +81,17 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
     return `${diffDays}d ago`;
   };
 
+  const isGlass = styleTheme === 'glass';
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-3 py-4 sm:p-4">
+    <div className={`flex min-h-screen items-center justify-center px-3 py-4 sm:p-4 transition-all duration-500 ${
+      isGlass 
+        ? 'gradient-bg-glass dark:gradient-bg-glass gradient-bg-glass-light' 
+        : 'bg-background'
+    }`}>
+      {/* Header controls */}
       <div className="absolute right-3 top-3 flex items-center gap-1 sm:right-4 sm:top-4">
+        <StyleThemeToggle />
         <Link to="/about">
           <Button variant="ghost" size="icon" className="h-9 w-9">
             <Info className="h-4 w-4" />
@@ -89,7 +100,13 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
         </Link>
         <ThemeToggle />
       </div>
-      <Card className="w-full max-w-md">
+
+      {/* Main Card */}
+      <Card className={`w-full max-w-md transition-all duration-300 ${
+        isGlass 
+          ? 'glass-card border-0 rounded-2xl' 
+          : 'classic-card'
+      }`}>
         <CardHeader className="text-center px-4 sm:px-6">
           <div className="mx-auto mb-2">
             <img src={fastpasteLogo} alt="FastPaste" className="h-12 sm:h-16 w-auto" />
@@ -99,11 +116,16 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
+          {/* Create Button */}
           <div>
             <Button
               onClick={onCreate}
               disabled={loading}
-              className="w-full h-10 sm:h-11 text-sm sm:text-base"
+              className={`w-full h-10 sm:h-11 text-sm sm:text-base transition-all duration-300 ${
+                isGlass 
+                  ? 'glass-button text-foreground hover:scale-[1.02]' 
+                  : ''
+              }`}
             >
               <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               Create New Group
@@ -111,12 +133,15 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
           </div>
 
           <div className="relative">
-            <Separator />
-            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+            <Separator className={isGlass ? 'bg-white/20' : ''} />
+            <span className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-2 text-xs text-muted-foreground ${
+              isGlass ? 'bg-transparent backdrop-blur-sm' : 'bg-card'
+            }`}>
               OR
             </span>
           </div>
 
+          {/* Join Form */}
           <form onSubmit={handleJoin} className="space-y-2 sm:space-y-3">
             <Input
               type="text"
@@ -125,14 +150,18 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
               placeholder="Enter 6-digit code"
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              className="text-center font-mono text-base sm:text-lg tracking-widest h-10 sm:h-11"
+              className={`text-center font-mono text-base sm:text-lg tracking-widest h-10 sm:h-11 ${
+                isGlass ? 'glass-input' : 'classic-input'
+              }`}
               maxLength={6}
             />
             <Button
               type="submit"
               variant="secondary"
               disabled={joinCode.length !== 6 || loading}
-              className="w-full h-10 sm:h-11 text-sm sm:text-base"
+              className={`w-full h-10 sm:h-11 text-sm sm:text-base ${
+                isGlass ? 'backdrop-blur-md bg-white/10 border border-white/20 hover:bg-white/20' : ''
+              }`}
             >
               <LogIn className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               Join Group
@@ -148,11 +177,14 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
             <p className="text-center text-sm text-destructive">{error}</p>
           )}
 
+          {/* History Section */}
           {history.length > 0 && (
             <>
               <div className="relative">
-                <Separator />
-                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+                <Separator className={isGlass ? 'bg-white/20' : ''} />
+                <span className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-2 text-xs text-muted-foreground ${
+                  isGlass ? 'bg-transparent backdrop-blur-sm' : 'bg-card'
+                }`}>
                   <History className="inline h-3 w-3 mr-1" />
                   Recent Groups
                 </span>
@@ -162,7 +194,11 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
                 {history.map((item) => (
                   <div
                     key={item.code}
-                    className="group flex items-center justify-between rounded-lg border border-border bg-muted/50 p-2 sm:p-3 transition-colors hover:bg-muted"
+                    className={`group flex items-center justify-between rounded-lg p-2 sm:p-3 transition-all duration-200 ${
+                      isGlass 
+                        ? 'backdrop-blur-md bg-white/5 border border-white/10 hover:bg-white/10' 
+                        : 'border border-border bg-muted/50 hover:bg-muted'
+                    }`}
                   >
                     <button
                       onClick={() => editingCode !== item.code && handleRejoin(item.code)}
@@ -171,8 +207,12 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
                     >
                       <div className={`flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full ${
                         item.type === 'created' 
-                          ? 'bg-primary/10 text-primary'
-                          : 'bg-secondary text-muted-foreground'
+                          ? isGlass 
+                            ? 'bg-primary/20 text-primary' 
+                            : 'bg-primary/10 text-primary'
+                          : isGlass
+                            ? 'bg-white/10 text-muted-foreground'
+                            : 'bg-secondary text-muted-foreground'
                       }`}>
                         {item.type === 'created' ? (
                           <Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -187,7 +227,7 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
                               value={editName}
                               onChange={(e) => setEditName(e.target.value)}
                               placeholder="Enter nickname..."
-                              className="h-7 text-sm"
+                              className={`h-7 text-sm ${isGlass ? 'glass-input' : ''}`}
                               maxLength={30}
                               autoFocus
                               onKeyDown={(e) => {
@@ -234,7 +274,7 @@ export function JoinCreateForm({ onJoin, onCreate, loading, error }: JoinCreateF
                                 </code>
                               )}
                             </div>
-                              <span className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
                               <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                               {formatTimeAgo(item.joinedAt)}
                               <span className="mx-0.5 sm:mx-1">•</span>
