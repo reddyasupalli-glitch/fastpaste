@@ -2,6 +2,16 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { SwipeableMessage } from './SwipeableMessage';
 import { MessageContextMenu } from './MessageContextMenu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { Message } from '@/hooks/useMessages';
 import type { ReactionGroup } from '@/hooks/useReactions';
 import { toast } from '@/hooks/use-toast';
@@ -42,6 +52,8 @@ export function MessageList({
     position: { x: 0, y: 0 },
     message: null,
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -95,10 +107,23 @@ export function MessageList({
   }, [contextMenu.message, onToggleReaction]);
 
   const handleDelete = useCallback(() => {
-    if (contextMenu.message && onDeleteMessage) {
-      onDeleteMessage(contextMenu.message.id);
+    if (contextMenu.message) {
+      setMessageToDelete(contextMenu.message);
+      setDeleteDialogOpen(true);
     }
-  }, [contextMenu.message, onDeleteMessage]);
+  }, [contextMenu.message]);
+
+  const confirmDelete = useCallback(() => {
+    if (messageToDelete && onDeleteMessage) {
+      onDeleteMessage(messageToDelete.id);
+      toast({
+        title: 'Deleted',
+        description: 'Message deleted',
+      });
+    }
+    setDeleteDialogOpen(false);
+    setMessageToDelete(null);
+  }, [messageToDelete, onDeleteMessage]);
 
   if (loading) {
     return (
@@ -170,6 +195,24 @@ export function MessageList({
         onDelete={contextMenu.message?.username === currentUsername ? handleDelete : undefined}
         isOwn={contextMenu.message?.username === currentUsername}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete message?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The message will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
