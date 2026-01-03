@@ -20,18 +20,24 @@ export type Database = {
           created_at: string
           id: string
           last_activity_at: string
+          password_hash: string | null
+          room_type: string
         }
         Insert: {
           code: string
           created_at?: string
           id?: string
           last_activity_at?: string
+          password_hash?: string | null
+          room_type?: string
         }
         Update: {
           code?: string
           created_at?: string
           id?: string
           last_activity_at?: string
+          password_hash?: string | null
+          room_type?: string
         }
         Relationships: []
       }

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { ArrowLeft, Code, Users, Zap, Shield, Github, Twitter, Mail } from 'lucide-react';
+import { ArrowLeft, Code, Users, Zap, Shield, Instagram, Mail } from 'lucide-react';
 import fastpasteLogo from '@/assets/fastpaste-logo.png';
 
 const About = () => {
@@ -17,7 +17,7 @@ const About = () => {
         <ThemeToggle />
       </div>
 
-      <Card className="mt-12 w-full max-w-2xl">
+      <Card className="mt-12 w-full max-w-2xl clean-card">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
             <img src={fastpasteLogo} alt="FastPaste" className="h-16 sm:h-20 w-auto" />
@@ -62,7 +62,7 @@ const About = () => {
               <div>
                 <h3 className="font-semibold text-foreground">Easy Collaboration</h3>
                 <p className="text-sm text-muted-foreground">
-                  Share a 6-digit code and anyone can join your group instantly.
+                  Share a 4-digit code and anyone can join your room instantly.
                 </p>
               </div>
             </div>
@@ -84,23 +84,15 @@ const About = () => {
             <h3 className="mb-3 font-semibold text-foreground">Connect With Us</h3>
             <div className="flex justify-center gap-3">
               <a
-                href="https://github.com"
+                href="https://www.instagram.com/trione.solutions?igsh=NjZ1eGZqMnljcGZz"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-background border border-border text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
               >
-                <Github className="h-5 w-5" />
+                <Instagram className="h-5 w-5" />
               </a>
               <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-background border border-border text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
-              >
-                <Twitter className="h-5 w-5" />
-              </a>
-              <a
-                href="mailto:contact@fastpaste.app"
+                href="mailto:trionesolutionsprt@gmail.com"
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-background border border-border text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
               >
                 <Mail className="h-5 w-5" />

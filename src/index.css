@@ -17,7 +17,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 221 83% 53%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -34,9 +34,9 @@ All colors MUST be HSL.
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 221 83% 53%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -47,23 +47,23 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Glass theme variables */
-    --glass-bg: 0 0% 100% / 0.7;
-    --glass-border: 0 0% 100% / 0.3;
-    --glass-glow: 217 91% 60%;
+    /* Soft shadows for depth */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
   }
 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 224 71% 8%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 224 71% 8%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
+    --primary: 217 91% 60%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -80,7 +80,8 @@ All colors MUST be HSL.
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 217 91% 60%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -90,10 +91,10 @@ All colors MUST be HSL.
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Glass theme variables - dark mode */
-    --glass-bg: 222 84% 8% / 0.6;
-    --glass-border: 217 91% 60% / 0.2;
-    --glass-glow: 217 91% 60%;
+    /* Soft shadows for dark mode */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.3), 0 4px 6px -4px hsl(0 0% 0% / 0.2);
   }
 }
 
@@ -107,61 +108,27 @@ All colors MUST be HSL.
   }
 }
 
-/* Glass theme styles */
-.theme-glass {
-  --radius: 0.75rem;
+/* Clean card styles */
+.clean-card {
+  @apply bg-card border border-border rounded-xl;
+  box-shadow: var(--shadow-md);
 }
 
-.theme-glass .glass-card {
-  @apply backdrop-blur-xl border border-white/20 shadow-xl;
-  background: hsl(var(--glass-bg));
-  box-shadow: 
-    0 0 20px hsl(var(--glass-glow) / 0.1),
-    inset 0 1px 0 hsl(0 0% 100% / 0.1);
+.clean-input {
+  @apply bg-background border border-input rounded-lg;
 }
 
-.theme-glass .glass-input {
-  @apply backdrop-blur-md border border-white/20;
-  background: hsl(var(--glass-bg));
-}
-
-.theme-glass .glass-button {
-  @apply backdrop-blur-md border border-white/30;
-  background: hsl(var(--glass-glow) / 0.2);
-  box-shadow: 0 0 20px hsl(var(--glass-glow) / 0.3);
-}
-
-.theme-glass .glass-button:hover {
-  background: hsl(var(--glass-glow) / 0.3);
-  box-shadow: 0 0 30px hsl(var(--glass-glow) / 0.4);
-}
-
-/* Classic theme styles */
-.theme-classic {
-  --radius: 0.25rem;
-}
-
-.theme-classic .classic-card {
-  @apply border border-border bg-card shadow-sm;
-}
-
-.theme-classic .classic-input {
-  @apply border border-input bg-background;
-}
-
-/* Gradient backgrounds */
-.gradient-bg-glass {
+/* Gradient accent for primary buttons */
+.gradient-primary {
   background: linear-gradient(135deg, 
-    hsl(222 84% 8%) 0%, 
-    hsl(240 20% 12%) 50%, 
-    hsl(280 30% 15%) 100%
+    hsl(var(--primary)) 0%, 
+    hsl(221 83% 60%) 100%
   );
 }
 
-.gradient-bg-glass-light {
+.dark .gradient-primary {
   background: linear-gradient(135deg, 
-    hsl(220 30% 96%) 0%, 
-    hsl(240 20% 98%) 50%, 
-    hsl(280 20% 96%) 100%
+    hsl(var(--primary)) 0%, 
+    hsl(217 91% 65%) 100%
   );
 }

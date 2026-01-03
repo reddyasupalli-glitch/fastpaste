@@ -5,7 +5,16 @@ import { WelcomeDialog } from '@/components/WelcomeDialog';
 import { Footer } from '@/components/Footer';
 
 const Index = () => {
-  const { group, loading, error, createGroup, joinGroup, leaveGroup } = useGroup();
+  const { 
+    group, 
+    loading, 
+    error, 
+    pendingJoinGroup,
+    createGroup, 
+    joinGroup, 
+    leaveGroup,
+    cancelPendingJoin 
+  } = useGroup();
 
   if (group) {
     return (
@@ -28,6 +37,8 @@ const Index = () => {
         onCreate={createGroup}
         loading={loading}
         error={error}
+        pendingJoinGroup={pendingJoinGroup}
+        onCancelPendingJoin={cancelPendingJoin}
       />
       <Footer />
     </>
