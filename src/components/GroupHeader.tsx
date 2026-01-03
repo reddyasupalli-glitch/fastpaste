@@ -39,7 +39,7 @@ export function GroupHeader({
     navigator.clipboard.writeText(code);
     toast({
       title: 'Copied!',
-      description: 'Group code copied to clipboard',
+      description: 'Room code copied to clipboard',
     });
   };
 
@@ -61,11 +61,11 @@ export function GroupHeader({
   };
 
   return (
-    <header className="flex items-center justify-between gap-2 border-b border-border bg-card/90 backdrop-blur-sm px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-3">
-      {/* Left section - Group code and online count */}
+    <header className="flex items-center justify-between gap-2 border-b border-border bg-card px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-3">
+      {/* Left section - Room code and online count */}
       <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 min-w-0 flex-shrink">
         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 min-w-0">
-          <span className="hidden sm:inline text-sm text-muted-foreground">Group:</span>
+          <span className="hidden sm:inline text-sm text-muted-foreground">Room:</span>
           <code className="rounded bg-muted px-1.5 py-0.5 sm:px-2 sm:py-1 md:px-3 md:py-1.5 font-mono text-xs sm:text-sm md:text-lg font-semibold text-foreground truncate max-w-[80px] sm:max-w-none">
             {code}
           </code>
