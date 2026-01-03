@@ -17,10 +17,11 @@ import { cn } from '@/lib/utils';
 interface ChatRoomProps {
   groupId: string;
   groupCode: string;
+  roomType: 'public' | 'private';
   onLeave: () => void;
 }
 
-export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
+export function ChatRoom({ groupId, groupCode, roomType, onLeave }: ChatRoomProps) {
   const { username, setUsername, hasUsername } = useUsername();
   const { messages, loading, isAIThinking, sendMessage, sendFileMessage, deleteMessage } = useMessages(groupId, username);
   const { onlineCount, typingUsers, setTyping, markMessageSeen, getSeenBy } = usePresence(groupId, username);
@@ -78,6 +79,7 @@ export function ChatRoom({ groupId, groupCode, onLeave }: ChatRoomProps) {
       <div className="flex flex-col h-full w-full max-w-full md:max-w-[90%] lg:max-w-[1400px] mx-auto px-0 md:px-6 lg:px-8">
         <GroupHeader 
           code={groupCode} 
+          roomType={roomType}
           onLeave={onLeave} 
           onlineCount={onlineCount} 
           username={username}

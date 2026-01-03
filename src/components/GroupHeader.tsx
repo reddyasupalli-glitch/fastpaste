@@ -1,14 +1,21 @@
 import { useState } from 'react';
-import { Copy, LogOut, Users, Pencil, Check, X } from 'lucide-react';
+import { Copy, LogOut, Users, Pencil, Check, X, Share2, MessageCircle, Send, Link } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { BackgroundSelector } from '@/components/BackgroundSelector';
 import { BackgroundOption } from '@/hooks/useChatBackground';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface GroupHeaderProps {
   code: string;
+  roomType: 'public' | 'private';
   onLeave: () => void;
   onlineCount: number;
   username: string;
@@ -22,6 +29,7 @@ interface GroupHeaderProps {
 
 export function GroupHeader({ 
   code, 
+  roomType,
   onLeave, 
   onlineCount, 
   username,
@@ -35,12 +43,32 @@ export function GroupHeader({
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(username);
 
+  const isPrivate = roomType === 'private';
+  const shareUrl = `${window.location.origin}?room=${code}`;
+  const shareText = `Join my FastPaste room: ${shareUrl}`;
+
   const copyCode = () => {
     navigator.clipboard.writeText(code);
     toast({
       title: 'Copied!',
       description: 'Room code copied to clipboard',
     });
+  };
+
+  const copyShareUrl = () => {
+    navigator.clipboard.writeText(shareUrl);
+    toast({
+      title: 'Copied!',
+      description: 'Room link copied to clipboard',
+    });
+  };
+
+  const shareToWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
+  };
+
+  const shareToTelegram = () => {
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent('Join my FastPaste room!')}`, '_blank');
   };
 
   const handleSaveName = () => {
@@ -62,16 +90,45 @@ export function GroupHeader({
 
   return (
     <header className="flex items-center justify-between gap-2 border-b border-border bg-card px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-3">
-      {/* Left section - Room code and online count */}
+      {/* Left section - Room code/share and online count */}
       <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 min-w-0 flex-shrink">
         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 min-w-0">
-          <span className="hidden sm:inline text-sm text-muted-foreground">Room:</span>
-          <code className="rounded bg-muted px-1.5 py-0.5 sm:px-2 sm:py-1 md:px-3 md:py-1.5 font-mono text-xs sm:text-sm md:text-lg font-semibold text-foreground truncate max-w-[80px] sm:max-w-none">
-            {code}
-          </code>
-          <Button variant="ghost" size="icon" onClick={copyCode} className="h-6 w-6 sm:h-8 sm:w-8 md:h-9 md:w-9 flex-shrink-0">
-            <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
-          </Button>
+          {isPrivate ? (
+            // Private room: Show share dropdown instead of code
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 h-7 sm:h-8 md:h-9 px-2 sm:px-3">
+                  <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline text-sm">Share Room</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuItem onClick={shareToWhatsApp} className="gap-2 cursor-pointer">
+                  <MessageCircle className="h-4 w-4 text-green-500" />
+                  WhatsApp
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={shareToTelegram} className="gap-2 cursor-pointer">
+                  <Send className="h-4 w-4 text-blue-500" />
+                  Telegram
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={copyShareUrl} className="gap-2 cursor-pointer">
+                  <Link className="h-4 w-4" />
+                  Copy Link
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            // Public room: Show code with copy button
+            <>
+              <span className="hidden sm:inline text-sm text-muted-foreground">Room:</span>
+              <code className="rounded bg-muted px-1.5 py-0.5 sm:px-2 sm:py-1 md:px-3 md:py-1.5 font-mono text-xs sm:text-sm md:text-lg font-semibold text-foreground truncate max-w-[80px] sm:max-w-none">
+                {code}
+              </code>
+              <Button variant="ghost" size="icon" onClick={copyCode} className="h-6 w-6 sm:h-8 sm:w-8 md:h-9 md:w-9 flex-shrink-0">
+                <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+              </Button>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-0.5 sm:gap-1 md:gap-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 sm:px-2 md:px-3 md:py-1 flex-shrink-0">
           <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">

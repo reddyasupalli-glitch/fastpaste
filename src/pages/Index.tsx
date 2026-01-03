@@ -23,6 +23,7 @@ const Index = () => {
         <ChatRoom
           groupId={group.id}
           groupCode={group.code}
+          roomType={group.room_type}
           onLeave={leaveGroup}
         />
       </>
