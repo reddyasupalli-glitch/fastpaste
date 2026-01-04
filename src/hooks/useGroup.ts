@@ -8,6 +8,7 @@ interface Group {
   code: string;
   created_at: string;
   room_type: 'public' | 'private';
+  creatorUsername?: string;
 }
 
 interface CreateGroupOptions {
@@ -20,8 +21,9 @@ export function useGroup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingJoinGroup, setPendingJoinGroup] = useState<{ id: string; code: string; created_at: string } | null>(null);
+  const [creatorUsername, setCreatorUsername] = useState<string | null>(null);
 
-  const createGroup = async (options: CreateGroupOptions = { isPrivate: false }): Promise<Group | null> => {
+  const createGroup = async (options: CreateGroupOptions = { isPrivate: false }, username?: string): Promise<Group | null> => {
     setLoading(true);
     setError(null);
     
@@ -47,8 +49,13 @@ export function useGroup() {
         .single();
       
       if (data) {
-        const groupData = { ...data, room_type: data.room_type as 'public' | 'private' };
+        const groupData = { 
+          ...data, 
+          room_type: data.room_type as 'public' | 'private',
+          creatorUsername: username,
+        };
         setGroup(groupData);
+        setCreatorUsername(username || null);
         addToGroupHistory(data.code, 'created');
         setLoading(false);
         return groupData;
@@ -145,6 +152,7 @@ export function useGroup() {
     setGroup(null);
     setError(null);
     setPendingJoinGroup(null);
+    setCreatorUsername(null);
   };
 
   return {
@@ -152,6 +160,7 @@ export function useGroup() {
     loading,
     error,
     pendingJoinGroup,
+    creatorUsername,
     createGroup,
     joinGroup,
     checkRoomType,

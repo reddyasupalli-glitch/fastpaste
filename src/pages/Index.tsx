@@ -10,6 +10,7 @@ const Index = () => {
     loading, 
     error, 
     pendingJoinGroup,
+    creatorUsername,
     createGroup, 
     joinGroup, 
     leaveGroup,
@@ -24,6 +25,7 @@ const Index = () => {
           groupId={group.id}
           groupCode={group.code}
           roomType={group.room_type}
+          creatorUsername={creatorUsername || group.creatorUsername}
           onLeave={leaveGroup}
         />
       </>

@@ -5,21 +5,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 const AI_NAME = 'Asu';
 const AI_TRIGGER_PATTERNS = [/@Asu\s*/i, /\/Asu\s*/i];
 const HELP_TRIGGERS = ['help', '?', 'commands'];
-
-const WELCOME_MESSAGE = `Hey! Nenu Asu, mee AI friend in FastPaste! 🎉
-
-Welcome to the chat! Meeku em help kavali ante just ask cheyandi.
-
-**Nannu ela use cheyyalo:**
-• Type \`@Asu\` followed by your question
-• Or use \`/Asu\` followed by your question
-
-**Examples:**
-• \`@Asu What is JavaScript?\`
-• \`/Asu Tell me a joke\`
-• \`@Asu Help me with coding\`
-
-Inka em doubt unte cheppandi, nenu help chestanu! Happy chatting! 🤖✨`;
+const AI_RESPONSE_TIMEOUT = 10000; // 10 seconds
 
 const HELP_MESSAGE = `Hey! Nenu Asu, mee AI assistant in this chat. Meeru nannu ela use cheyyalo cheptanu:
 
@@ -49,6 +35,12 @@ export interface Message {
   file_type?: string | null;
 }
 
+// Global set to track messages that have been processed for AI response
+// This prevents duplicate triggers across re-renders and reconnects
+const processedAIMessages = new Set<string>();
+// Global lock to prevent concurrent AI responses
+let aiResponseLock = false;
+
 export function useMessages(groupId: string | null, username: string | null) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,7 +49,7 @@ export function useMessages(groupId: string | null, username: string | null) {
   const isSubscribedRef = useRef(false);
   const isMountedRef = useRef(true);
   const messagesRef = useRef<Message[]>([]);
-  const welcomeSentRef = useRef(false);
+  const pendingAIResponseRef = useRef<string | null>(null);
 
   // Keep messagesRef in sync
   useEffect(() => {
@@ -71,6 +63,15 @@ export function useMessages(groupId: string | null, username: string | null) {
       isMountedRef.current = false;
     };
   }, []);
+
+  // Cleanup processed messages when leaving room
+  useEffect(() => {
+    return () => {
+      // Clear processed messages for this group when unmounting
+      processedAIMessages.clear();
+      aiResponseLock = false;
+    };
+  }, [groupId]);
 
   const safeSetMessages = useCallback((updater: React.SetStateAction<Message[]>) => {
     if (isMountedRef.current) {
@@ -106,6 +107,12 @@ export function useMessages(groupId: string | null, username: string | null) {
     
     if (data) {
       safeSetMessages(data as Message[]);
+      // Mark all existing messages as processed to prevent AI from responding to old messages
+      data.forEach(msg => {
+        if (msg.username !== AI_NAME) {
+          processedAIMessages.add(msg.id);
+        }
+      });
     }
     safeSetLoading(false);
   }, [groupId, safeSetLoading, safeSetMessages]);
@@ -124,7 +131,12 @@ export function useMessages(groupId: string | null, username: string | null) {
   };
 
   const getAIResponse = async (question: string, conversationContext: Message[]): Promise<string | null> => {
+    console.log('[AI] Getting response for question:', question.substring(0, 50));
+    
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), AI_RESPONSE_TIMEOUT);
+      
       const { data, error } = await supabase.functions.invoke('chat-ai', {
         body: { 
           message: question,
@@ -135,25 +147,33 @@ export function useMessages(groupId: string | null, username: string | null) {
         }
       });
 
+      clearTimeout(timeoutId);
+
       if (error) {
-        console.error('AI function error:', error);
+        console.error('[AI] Function error:', error);
         return "Sorry, I'm having trouble connecting right now. Please try again! 🔄";
       }
 
       if (data?.error) {
-        console.error('AI error response:', data.error);
+        console.error('[AI] Error response:', data.error);
         return data.error;
       }
 
+      console.log('[AI] Response received successfully');
       return data?.response || "I couldn't generate a response. Please try again!";
     } catch (err) {
-      console.error('Error getting AI response:', err);
+      console.error('[AI] Error getting response:', err);
+      if (err instanceof Error && err.name === 'AbortError') {
+        return "Sorry, the response is taking too long. Please try again! ⏳";
+      }
       return "Oops! Something went wrong. Please try again in a moment! 🙏";
     }
   };
 
-  const sendAIMessage = useCallback(async (content: string): Promise<boolean> => {
+  const sendAIMessage = useCallback(async (content: string, triggerMessageId: string): Promise<boolean> => {
     if (!groupId || !isMountedRef.current) return false;
+
+    console.log('[AI] Sending AI message for trigger:', triggerMessageId);
 
     const optimisticId = `temp-ai-${Date.now()}`;
     const optimisticMessage: Message = {
@@ -180,7 +200,7 @@ export function useMessages(groupId: string | null, username: string | null) {
         .single();
 
       if (error) {
-        console.error('Error sending AI message:', error);
+        console.error('[AI] Error sending message:', error);
         safeSetMessages((prev) => prev.filter((m) => m.id !== optimisticId));
         return false;
       }
@@ -190,19 +210,75 @@ export function useMessages(groupId: string | null, username: string | null) {
           prev.map((m) => m.id === optimisticId ? (data as Message) : m)
         );
       }
+      console.log('[AI] Message sent successfully');
       return true;
     } catch (err) {
-      console.error('Error sending AI message:', err);
+      console.error('[AI] Error sending message:', err);
       safeSetMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       return false;
     }
   }, [groupId, safeSetMessages]);
 
+  const processAIResponse = useCallback(async (
+    messageId: string, 
+    content: string
+  ): Promise<void> => {
+    // CRITICAL: Check if this message has already been processed
+    if (processedAIMessages.has(messageId)) {
+      console.log('[AI] Message already processed, skipping:', messageId);
+      return;
+    }
+
+    // CRITICAL: Check if AI is already processing another message
+    if (aiResponseLock) {
+      console.log('[AI] Response lock active, queueing message:', messageId);
+      return;
+    }
+
+    // Mark as processed immediately to prevent race conditions
+    processedAIMessages.add(messageId);
+    pendingAIResponseRef.current = messageId;
+    
+    const { isAIMessage, question, isHelp } = checkForAITrigger(content);
+    
+    if (!isAIMessage) {
+      console.log('[AI] Not an AI message:', messageId);
+      pendingAIResponseRef.current = null;
+      return;
+    }
+
+    console.log('[AI] Processing AI trigger for message:', messageId);
+    
+    // Acquire lock
+    aiResponseLock = true;
+    safeSetIsAIThinking(true);
+
+    try {
+      if (isHelp) {
+        await sendAIMessage(HELP_MESSAGE, messageId);
+      } else if (question) {
+        const currentMessages = messagesRef.current;
+        const aiResponse = await getAIResponse(question, currentMessages);
+        if (aiResponse && isMountedRef.current) {
+          await sendAIMessage(aiResponse, messageId);
+        }
+      }
+    } catch (err) {
+      console.error('[AI] Error processing response:', err);
+    } finally {
+      // Release lock
+      aiResponseLock = false;
+      pendingAIResponseRef.current = null;
+      safeSetIsAIThinking(false);
+      console.log('[AI] Processing complete for message:', messageId);
+    }
+  }, [safeSetIsAIThinking, sendAIMessage]);
+
   const sendMessage = useCallback(async (content: string, messageType: 'text' | 'code'): Promise<boolean> => {
     if (!groupId || !content.trim() || !username || !isMountedRef.current) return false;
     
-    // Create optimistic message
-    const optimisticId = `temp-${Date.now()}`;
+    // Create optimistic message with a unique ID
+    const optimisticId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const optimisticMessage: Message = {
       id: optimisticId,
       group_id: groupId,
@@ -235,29 +311,20 @@ export function useMessages(groupId: string | null, username: string | null) {
       
       // Replace optimistic message with real one
       if (data) {
+        const realMessageId = data.id;
+        console.log('[Message] Sent with ID:', realMessageId);
+        
         safeSetMessages((prev) => 
           prev.map((m) => m.id === optimisticId ? (data as Message) : m)
         );
-      }
 
-      // Check if message triggers AI response
-      const { isAIMessage, question, isHelp } = checkForAITrigger(content.trim());
-      if (isAIMessage && isMountedRef.current) {
-        safeSetIsAIThinking(true);
-        try {
-          if (isHelp) {
-            // Show help message without API call
-            await sendAIMessage(HELP_MESSAGE);
-          } else if (question) {
-            // Use messagesRef for context instead of setState trick
-            const currentMessages = messagesRef.current;
-            const aiResponse = await getAIResponse(question, currentMessages);
-            if (aiResponse && isMountedRef.current) {
-              await sendAIMessage(aiResponse);
-            }
-          }
-        } finally {
-          safeSetIsAIThinking(false);
+        // Process AI response for this specific message
+        // Only process if this is NOT from the AI and has a trigger
+        if (username !== AI_NAME && isMountedRef.current) {
+          // Small delay to ensure state is updated
+          setTimeout(() => {
+            processAIResponse(realMessageId, content.trim());
+          }, 50);
         }
       }
 
@@ -267,7 +334,7 @@ export function useMessages(groupId: string | null, username: string | null) {
       safeSetMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       return false;
     }
-  }, [groupId, username, safeSetMessages, safeSetIsAIThinking, sendAIMessage]);
+  }, [groupId, username, safeSetMessages, processAIResponse]);
 
   const sendFileMessage = useCallback(async (file: File): Promise<boolean> => {
     if (!groupId || !username || !isMountedRef.current) return false;
@@ -352,8 +419,6 @@ export function useMessages(groupId: string | null, username: string | null) {
     fetchMessages();
   }, [fetchMessages]);
 
-  // Removed welcome message auto-send - Asu chat is now separate on home page
-
   // Subscribe to realtime updates - using a stable subscription
   useEffect(() => {
     if (!groupId) return;
@@ -379,7 +444,7 @@ export function useMessages(groupId: string | null, username: string | null) {
           filter: `group_id=eq.${groupId}`,
         },
         (payload) => {
-          console.log('Realtime INSERT received:', payload);
+          console.log('Realtime INSERT received:', payload.new?.id);
           const newMessage = payload.new as Message;
           
           setMessages((prev) => {
@@ -405,6 +470,10 @@ export function useMessages(groupId: string | null, username: string | null) {
             console.log('Adding new message from realtime');
             return [...prev, newMessage];
           });
+
+          // DO NOT trigger AI response from realtime events
+          // AI responses are only triggered from sendMessage
+          // This prevents duplicate responses on reconnect/re-render
         }
       )
       .on(
