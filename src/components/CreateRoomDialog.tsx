@@ -13,7 +13,7 @@ import {
 interface CreateRoomDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreate: (options: { isPrivate: boolean; password?: string }) => Promise<unknown>;
+  onCreate: (options: { isPrivate: boolean; password?: string }, username?: string) => Promise<unknown>;
   loading: boolean;
 }
 
@@ -23,8 +23,18 @@ export function CreateRoomDialog({ open, onOpenChange, onCreate, loading }: Crea
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Get stored username
+  const getStoredUsername = (): string | null => {
+    try {
+      return localStorage.getItem('fastpaste_username');
+    } catch {
+      return null;
+    }
+  };
+
   const handleCreatePublic = async () => {
-    await onCreate({ isPrivate: false });
+    const username = getStoredUsername();
+    await onCreate({ isPrivate: false }, username || undefined);
     resetAndClose();
   };
 
@@ -38,7 +48,8 @@ export function CreateRoomDialog({ open, onOpenChange, onCreate, loading }: Crea
       return;
     }
     setError(null);
-    await onCreate({ isPrivate: true, password });
+    const username = getStoredUsername();
+    await onCreate({ isPrivate: true, password }, username || undefined);
     resetAndClose();
   };
 

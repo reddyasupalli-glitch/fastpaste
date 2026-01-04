@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useEffect } from 'react';
+import { useCallback, useMemo, useEffect, useState } from 'react';
 import { GroupHeader } from './GroupHeader';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { UsernamePrompt } from './UsernamePrompt';
 import { TypingIndicator } from './TypingIndicator';
 import { WelcomeDialog } from './WelcomeDialog';
+import { KickedDialog } from './KickedDialog';
 
 import { useMessages } from '@/hooks/useMessages';
 import { usePresence } from '@/hooks/usePresence';
@@ -18,13 +19,15 @@ interface ChatRoomProps {
   groupId: string;
   groupCode: string;
   roomType: 'public' | 'private';
+  creatorUsername?: string;
   onLeave: () => void;
 }
 
-export function ChatRoom({ groupId, groupCode, roomType, onLeave }: ChatRoomProps) {
+export function ChatRoom({ groupId, groupCode, roomType, creatorUsername, onLeave }: ChatRoomProps) {
   const { username, setUsername, hasUsername } = useUsername();
+  const isCreator = username === creatorUsername;
   const { messages, loading, isAIThinking, sendMessage, sendFileMessage, deleteMessage } = useMessages(groupId, username);
-  const { onlineCount, typingUsers, setTyping, markMessageSeen, getSeenBy } = usePresence(groupId, username);
+  const { onlineCount, onlineUsers, typingUsers, kickedUsers, setTyping, markMessageSeen, getSeenBy, kickUser } = usePresence(groupId, username, isCreator);
   const { fetchReactions, toggleReaction, getReactionsForMessage } = useReactions(groupId, username);
   const { quotedMessage, handleSwipeReply, dismissQuote } = useSwipeToReply();
   const { 
@@ -36,7 +39,21 @@ export function ChatRoom({ groupId, groupCode, roomType, onLeave }: ChatRoomProp
     removeCustomBackground,
   } = useChatBackground();
 
+  const [showKickedDialog, setShowKickedDialog] = useState(false);
+
   const messageIds = useMemo(() => messages.map(m => m.id), [messages]);
+
+  // Check if current user was kicked
+  useEffect(() => {
+    if (username && kickedUsers.includes(username)) {
+      setShowKickedDialog(true);
+    }
+  }, [kickedUsers, username]);
+
+  const handleKickedClose = () => {
+    setShowKickedDialog(false);
+    onLeave();
+  };
 
   // Fetch reactions when messages change
   useEffect(() => {
@@ -57,6 +74,10 @@ export function ChatRoom({ groupId, groupCode, roomType, onLeave }: ChatRoomProp
     deleteMessage(messageId);
   }, [deleteMessage]);
 
+  const handleKickUser = useCallback((targetUsername: string) => {
+    kickUser(targetUsername);
+  }, [kickUser]);
+
   if (!hasUsername) {
     return <UsernamePrompt onSubmit={setUsername} />;
   }
@@ -68,6 +89,7 @@ export function ChatRoom({ groupId, groupCode, roomType, onLeave }: ChatRoomProp
   return (
     <>
       <WelcomeDialog inChatRoom roomCode={groupCode} />
+      <KickedDialog open={showKickedDialog} onClose={handleKickedClose} />
       <div 
         className={cn(
           "flex h-screen flex-col w-full",
@@ -81,7 +103,8 @@ export function ChatRoom({ groupId, groupCode, roomType, onLeave }: ChatRoomProp
           code={groupCode} 
           roomType={roomType}
           onLeave={onLeave} 
-          onlineCount={onlineCount} 
+          onlineCount={onlineCount}
+          onlineUsers={onlineUsers}
           username={username}
           onUsernameChange={setUsername}
           backgroundId={backgroundId}
@@ -89,6 +112,8 @@ export function ChatRoom({ groupId, groupCode, roomType, onLeave }: ChatRoomProp
           onBackgroundChange={setBackground}
           onAddCustomBackground={addCustomBackground}
           onRemoveCustomBackground={removeCustomBackground}
+          creatorUsername={creatorUsername}
+          onKickUser={isCreator ? handleKickUser : undefined}
         />
         <MessageList 
           messages={messages} 

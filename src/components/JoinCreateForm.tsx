@@ -14,7 +14,7 @@ import fastpasteLogo from '@/assets/fastpaste-logo.png';
 
 interface JoinCreateFormProps {
   onJoin: (code: string, password?: string) => Promise<unknown>;
-  onCreate: (options: { isPrivate: boolean; password?: string }) => Promise<unknown>;
+  onCreate: (options: { isPrivate: boolean; password?: string }, username?: string) => Promise<unknown>;
   loading: boolean;
   error: string | null;
   pendingJoinGroup: { id: string; code: string; created_at: string } | null;
