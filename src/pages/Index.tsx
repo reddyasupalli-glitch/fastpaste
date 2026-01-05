@@ -2,7 +2,6 @@ import { useGroup } from '@/hooks/useGroup';
 import { JoinCreateForm } from '@/components/JoinCreateForm';
 import { ChatRoom } from '@/components/ChatRoom';
 import { WelcomeDialog } from '@/components/WelcomeDialog';
-import { Footer } from '@/components/Footer';
 
 const Index = () => {
   const { 
@@ -43,7 +42,6 @@ const Index = () => {
         pendingJoinGroup={pendingJoinGroup}
         onCancelPendingJoin={cancelPendingJoin}
       />
-      <Footer />
     </>
   );
 };

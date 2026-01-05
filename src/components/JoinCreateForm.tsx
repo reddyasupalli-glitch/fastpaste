@@ -231,7 +231,7 @@ export function JoinCreateForm({
                     >
                       <div className={`flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full ${
                         item.type === 'created' 
-                          ? 'bg-primary/10 text-primary'
+                          ? 'bg-amber-500/20 text-amber-500'
                           : 'bg-secondary text-muted-foreground'
                       }`}>
                         {item.type === 'created' ? (
@@ -240,6 +240,9 @@ export function JoinCreateForm({
                           <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         )}
                       </div>
+                      {item.type === 'created' && (
+                        <span className="text-[10px] text-amber-500 font-medium">Creator</span>
+                      )}
                       <div className="flex min-w-0 flex-col gap-0.5">
                         {editingCode === item.code ? (
                           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
