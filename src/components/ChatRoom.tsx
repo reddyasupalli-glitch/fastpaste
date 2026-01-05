@@ -6,6 +6,7 @@ import { UsernamePrompt } from './UsernamePrompt';
 import { TypingIndicator } from './TypingIndicator';
 import { WelcomeDialog } from './WelcomeDialog';
 import { KickedDialog } from './KickedDialog';
+import { RoomExpiryNotification } from './RoomExpiryNotification';
 
 import { useMessages } from '@/hooks/useMessages';
 import { usePresence } from '@/hooks/usePresence';
@@ -115,6 +116,7 @@ export function ChatRoom({ groupId, groupCode, roomType, creatorUsername, onLeav
           creatorUsername={creatorUsername}
           onKickUser={isCreator ? handleKickUser : undefined}
         />
+        <RoomExpiryNotification groupId={groupId} groupCode={groupCode} />
         <MessageList 
           messages={messages} 
           loading={loading} 

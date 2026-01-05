@@ -47,6 +47,13 @@ interface GroupHeaderProps {
 }
 
 const WHATSAPP_FEEDBACK_NUMBER = '+916300552884';
+const WHATSAPP_FEEDBACK_MESSAGE = `Hi! I'm using FastPaste app and I'd like to share my feedback:
+
+📱 App: FastPaste
+🏠 Room Code: {roomCode}
+💬 Type: Feedback/Suggestion
+
+My feedback:`;
 
 export function GroupHeader({ 
   code, 
@@ -80,7 +87,7 @@ export function GroupHeader({
   };
 
   const openWhatsAppFeedback = () => {
-    const message = encodeURIComponent('Hi! I have feedback about FastPaste app.');
+    const message = encodeURIComponent(WHATSAPP_FEEDBACK_MESSAGE.replace('{roomCode}', code));
     window.open(`https://wa.me/${WHATSAPP_FEEDBACK_NUMBER}?text=${message}`, '_blank');
   };
 
