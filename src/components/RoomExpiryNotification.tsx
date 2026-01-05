@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, Clock, X } from 'lucide-react';
+import { AlertTriangle, Clock, X, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
 interface RoomExpiryNotificationProps {
   groupId: string;
@@ -13,6 +14,7 @@ export function RoomExpiryNotification({ groupId, groupCode }: RoomExpiryNotific
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [urgencyLevel, setUrgencyLevel] = useState<'low' | 'medium' | 'high' | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchLastActivity = useCallback(async () => {
     const { data, error } = await supabase
@@ -70,6 +72,32 @@ export function RoomExpiryNotification({ groupId, groupCode }: RoomExpiryNotific
     return () => clearInterval(interval);
   }, [lastActivity]);
 
+  const handleRefreshActivity = async () => {
+    setRefreshing(true);
+    try {
+      const { error } = await supabase
+        .from('groups')
+        .update({ last_activity_at: new Date().toISOString() })
+        .eq('id', groupId);
+
+      if (error) throw error;
+
+      await fetchLastActivity();
+      toast({
+        title: "Activity refreshed!",
+        description: "Room timer has been reset to 24 hours.",
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to refresh",
+        description: "Could not reset the room timer.",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   // Don't show if dismissed, no urgency, or no activity data
   if (dismissed || !urgencyLevel || !lastActivity) return null;
 
@@ -90,19 +118,34 @@ export function RoomExpiryNotification({ groupId, groupCode }: RoomExpiryNotific
         )}
         <span className="text-xs sm:text-sm">
           {urgencyLevel === 'high' ? (
-            <>Room <strong>{groupCode}</strong> will expire soon! Send a message to keep it active.</>
+            <>Room <strong>{groupCode}</strong> will expire soon!</>
           ) : (
-            <>Room expires in <strong>{timeRemaining}</strong>. Activity resets the timer.</>
+            <>Room expires in <strong>{timeRemaining}</strong></>
           )}
         </span>
       </div>
-      <button
-        onClick={() => setDismissed(true)}
-        className="p-1 hover:bg-background/50 rounded transition-colors"
-        aria-label="Dismiss notification"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={handleRefreshActivity}
+          disabled={refreshing}
+          className={cn(
+            "flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors",
+            "bg-background/50 hover:bg-background/80",
+            refreshing && "opacity-50 cursor-not-allowed"
+          )}
+          aria-label="Refresh activity"
+        >
+          <RefreshCw className={cn("h-3 w-3", refreshing && "animate-spin")} />
+          <span className="hidden sm:inline">Refresh</span>
+        </button>
+        <button
+          onClick={() => setDismissed(true)}
+          className="p-1 hover:bg-background/50 rounded transition-colors"
+          aria-label="Dismiss notification"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
     </div>
   );
 }
