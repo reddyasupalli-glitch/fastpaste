@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useNotificationSound } from './useNotificationSound';
 
 const AI_NAME = 'Asu';
 const AI_TRIGGER_PATTERNS = [/@Asu\s*/i, /\/Asu\s*/i];
@@ -50,6 +51,7 @@ export function useMessages(groupId: string | null, username: string | null) {
   const isMountedRef = useRef(true);
   const messagesRef = useRef<Message[]>([]);
   const pendingAIResponseRef = useRef<string | null>(null);
+  const { play: playNotificationSound } = useNotificationSound();
 
   // Keep messagesRef in sync
   useEffect(() => {
@@ -465,6 +467,11 @@ export function useMessages(groupId: string | null, username: string | null) {
             if (tempMatch) {
               console.log('Replacing optimistic message with real one');
               return prev.map((m) => m.id === tempMatch.id ? newMessage : m);
+            }
+            
+            // Play notification sound for messages from other users
+            if (newMessage.username !== username) {
+              playNotificationSound();
             }
             
             console.log('Adding new message from realtime');
