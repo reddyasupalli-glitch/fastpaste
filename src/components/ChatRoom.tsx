@@ -27,6 +27,10 @@ interface ChatRoomProps {
 export function ChatRoom({ groupId, groupCode, roomType, creatorUsername, onLeave }: ChatRoomProps) {
   const { username, setUsername, hasUsername } = useUsername();
   const isCreator = username === creatorUsername;
+  
+  // Debug logging for kick feature
+  console.log('ChatRoom Debug:', { username, creatorUsername, isCreator, hasKickAccess: isCreator && !!creatorUsername });
+  
   const { messages, loading, isAIThinking, sendMessage, sendFileMessage, deleteMessage } = useMessages(groupId, username);
   const { onlineCount, onlineUsers, typingUsers, kickedUsers, setTyping, markMessageSeen, getSeenBy, kickUser } = usePresence(groupId, username, isCreator);
   const { fetchReactions, toggleReaction, getReactionsForMessage } = useReactions(groupId, username);

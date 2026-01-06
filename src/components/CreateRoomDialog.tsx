@@ -23,10 +23,10 @@ export function CreateRoomDialog({ open, onOpenChange, onCreate, loading }: Crea
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Get stored username
+  // Get stored username - must match the key used in useUsername hook
   const getStoredUsername = (): string | null => {
     try {
-      return localStorage.getItem('fastpaste_username');
+      return localStorage.getItem('chat-username');
     } catch {
       return null;
     }
