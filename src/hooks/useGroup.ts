@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { generateGroupCode, hashPassword, verifyPassword } from '@/lib/groupUtils';
-import { addToGroupHistory } from '@/lib/groupHistory';
+import { addToGroupHistory, getCreatorUsername } from '@/lib/groupHistory';
 
 interface Group {
   id: string;
@@ -56,7 +56,7 @@ export function useGroup() {
         };
         setGroup(groupData);
         setCreatorUsername(username || null);
-        addToGroupHistory(data.code, 'created');
+        addToGroupHistory(data.code, 'created', username);
         setLoading(false);
         return groupData;
       }
@@ -129,16 +129,21 @@ export function useGroup() {
       }
     }
     
+    // Check if we're the creator (from local history)
+    const storedCreator = getCreatorUsername(data.code);
+    
     const groupData = { 
       id: data.id, 
       code: data.code, 
       created_at: data.created_at, 
-      room_type: data.room_type as 'public' | 'private' 
+      room_type: data.room_type as 'public' | 'private',
+      creatorUsername: storedCreator,
     };
     
     setGroup(groupData);
     setPendingJoinGroup(null);
-    addToGroupHistory(data.code, 'joined');
+    setCreatorUsername(storedCreator || null);
+    addToGroupHistory(data.code, 'joined', storedCreator);
     setLoading(false);
     return groupData;
   };
