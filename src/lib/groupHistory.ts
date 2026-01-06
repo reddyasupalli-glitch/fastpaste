@@ -3,6 +3,7 @@ export interface GroupHistoryItem {
   joinedAt: string;
   type: 'created' | 'joined';
   customName?: string;
+  creatorUsername?: string;
 }
 
 const STORAGE_KEY = 'chat-group-history';
@@ -17,23 +18,30 @@ export function getGroupHistory(): GroupHistoryItem[] {
   }
 }
 
-export function addToGroupHistory(code: string, type: 'created' | 'joined'): void {
+export function addToGroupHistory(code: string, type: 'created' | 'joined', creatorUsername?: string): void {
   const history = getGroupHistory();
   
-  // Check if already exists and preserve custom name
+  // Check if already exists and preserve custom name and creator
   const existing = history.find((item) => item.code === code);
   const customName = existing?.customName;
+  const existingCreator = existing?.creatorUsername;
   
   // Remove if already exists
   const filtered = history.filter((item) => item.code !== code);
   
-  // Add to beginning
+  // Add to beginning - preserve creator if already known
   const updated = [
-    { code, joinedAt: new Date().toISOString(), type, customName },
+    { code, joinedAt: new Date().toISOString(), type, customName, creatorUsername: creatorUsername || existingCreator },
     ...filtered,
   ].slice(0, MAX_HISTORY);
   
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+}
+
+export function getCreatorUsername(code: string): string | undefined {
+  const history = getGroupHistory();
+  const item = history.find((h) => h.code === code);
+  return item?.creatorUsername;
 }
 
 export function updateGroupName(code: string, customName: string): void {

@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Copy, LogOut, Users, Pencil, Check, X, MessageCircle, Crown } from 'lucide-react';
+import { Copy, LogOut, Users, Pencil, Check, X, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { BackgroundSelector } from '@/components/BackgroundSelector';
 import { BackgroundOption } from '@/hooks/useChatBackground';
+import { FeedbackDialog } from '@/components/FeedbackDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,15 +47,6 @@ interface GroupHeaderProps {
   onKickUser?: (username: string) => void;
 }
 
-const WHATSAPP_FEEDBACK_NUMBER = '+916300552884';
-const WHATSAPP_FEEDBACK_MESSAGE = `Hi! I'm using FastPaste app and I'd like to share my feedback:
-
-📱 App: FastPaste
-🏠 Room Code: {roomCode}
-💬 Type: Feedback/Suggestion
-
-My feedback:`;
-
 export function GroupHeader({ 
   code, 
   roomType,
@@ -84,11 +76,6 @@ export function GroupHeader({
       title: 'Copied!',
       description: 'Room code copied to clipboard',
     });
-  };
-
-  const openWhatsAppFeedback = () => {
-    const message = encodeURIComponent(WHATSAPP_FEEDBACK_MESSAGE.replace('{roomCode}', code));
-    window.open(`https://wa.me/${WHATSAPP_FEEDBACK_NUMBER}?text=${message}`, '_blank');
   };
 
   const handleSaveName = () => {
@@ -127,7 +114,6 @@ export function GroupHeader({
         {/* Left section - Room code and online count */}
         <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 min-w-0 flex-shrink">
           <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 min-w-0">
-            {/* Room code display for all rooms */}
             <span className="hidden sm:inline text-sm text-muted-foreground">Room:</span>
             <code className="rounded bg-muted px-1.5 py-0.5 sm:px-2 sm:py-1 md:px-3 md:py-1.5 font-mono text-xs sm:text-sm md:text-lg font-semibold text-foreground truncate max-w-[80px] sm:max-w-none">
               {code}
@@ -197,16 +183,8 @@ export function GroupHeader({
         
         {/* Right section - Feedback, Username, settings, and leave */}
         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-3 flex-shrink-0">
-          {/* WhatsApp Feedback */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={openWhatsAppFeedback}
-            className="h-6 w-6 sm:h-8 sm:w-auto px-1 sm:px-2 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
-          >
-            <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:mr-1.5" />
-            <span className="hidden md:inline text-xs">Feedback</span>
-          </Button>
+          {/* Feedback with Rating */}
+          <FeedbackDialog roomCode={code} showLabel />
           
           {isEditingName ? (
             <div className="flex items-center gap-1">

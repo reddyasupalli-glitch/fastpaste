@@ -4,21 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Plus, History, Trash2, Clock, UserPlus, Crown, Pencil, Check, X, Info, Instagram, Mail, MessageCircle } from 'lucide-react';
+import { Plus, History, Trash2, Clock, UserPlus, Crown, Pencil, Check, X, Info, Instagram, Mail } from 'lucide-react';
 import { getGroupHistory, removeFromGroupHistory, updateGroupName, GroupHistoryItem } from '@/lib/groupHistory';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AsuChat } from '@/components/AsuChat';
 import { CreateRoomDialog } from '@/components/CreateRoomDialog';
 import { PasswordPromptDialog } from '@/components/PasswordPromptDialog';
+import { FeedbackDialog } from '@/components/FeedbackDialog';
 import fastpasteLogo from '@/assets/fastpaste-logo.png';
 
-const WHATSAPP_FEEDBACK_NUMBER = '+916300552884';
-const WHATSAPP_FEEDBACK_MESSAGE = `Hi! I'm using FastPaste app and I'd like to share my feedback:
-
-📱 App: FastPaste
-💬 Type: Feedback/Suggestion
-
-My feedback:`;
 
 interface JoinCreateFormProps {
   onJoin: (code: string, password?: string) => Promise<unknown>;
@@ -109,23 +103,11 @@ export function JoinCreateForm({
     return `${diffDays}d ago`;
   };
 
-  const openWhatsAppFeedback = () => {
-    const message = encodeURIComponent(WHATSAPP_FEEDBACK_MESSAGE);
-    window.open(`https://wa.me/${WHATSAPP_FEEDBACK_NUMBER}?text=${message}`, '_blank');
-  };
-
   return (
     <div className="flex min-h-screen items-center justify-center px-3 py-4 sm:p-4 bg-background">
       {/* Header controls */}
       <div className="absolute right-3 top-3 flex items-center gap-1 sm:right-4 sm:top-4">
-        <button
-          onClick={openWhatsAppFeedback}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md text-green-600 transition-colors hover:bg-green-50 dark:hover:bg-green-950"
-          title="Send Feedback via WhatsApp"
-        >
-          <MessageCircle className="h-4 w-4" />
-          <span className="sr-only">WhatsApp Feedback</span>
-        </button>
+        <FeedbackDialog triggerClassName="h-9 w-9" />
         <a
           href="https://www.instagram.com/trione.solutions?igsh=NjZ1eGZqMnljcGZz"
           target="_blank"
