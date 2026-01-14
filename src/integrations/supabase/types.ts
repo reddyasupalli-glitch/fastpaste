@@ -115,11 +115,41 @@ export type Database = {
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      groups_public: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          id: string | null
+          last_activity_at: string | null
+          room_type: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          id?: string | null
+          last_activity_at?: string | null
+          room_type?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          id?: string | null
+          last_activity_at?: string | null
+          room_type?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

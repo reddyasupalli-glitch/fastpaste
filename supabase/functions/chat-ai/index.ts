@@ -5,12 +5,46 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Simple in-memory rate limiting (resets on function cold start)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 20; // 20 requests
+const RATE_LIMIT_WINDOW = 60 * 1000; // per minute
+
+function checkRateLimit(identifier: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(identifier);
+  
+  if (!record || now > record.resetAt) {
+    rateLimitMap.set(identifier, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+  
+  if (record.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Rate limiting by IP
+    const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
+    if (!checkRateLimit(clientIP)) {
+      return new Response(JSON.stringify({ 
+        error: "Too many requests. Please slow down! 🙏",
+        errorType: "rate_limit"
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { message, conversationContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
@@ -19,7 +53,7 @@ serve(async (req) => {
       throw new Error("AI service is not properly configured");
     }
 
-    if (!message || typeof message !== 'string') {
+    if (!message || typeof message !== 'string' || message.length > 2000) {
       return new Response(JSON.stringify({ error: "Invalid message format" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
