@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -107,26 +108,46 @@ serve(async (req) => {
       });
     }
 
-    // Verify password using secure database function (never exposes hash)
-    const { data: isValid, error: verifyError } = await supabase
-      .rpc('verify_room_password', { 
-        room_code: roomCode, 
-        input_password: password 
-      });
+    // Get password hash from secure table (using service role)
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const { data: passwordData, error: passwordError } = await supabaseService
+      .from('group_passwords')
+      .select('password_hash')
+      .eq('group_id', room.id)
+      .maybeSingle();
 
-    if (verifyError) {
-      console.error("Password verification error:", verifyError);
+    if (passwordError) {
+      console.error("Password fetch error:", passwordError);
       return new Response(JSON.stringify({ error: "Verification failed" }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (isValid === null) {
+    if (!passwordData) {
       return new Response(JSON.stringify({ error: "Room has no password set" }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    const storedHash = passwordData.password_hash;
+    let isValid = false;
+
+    // Check if this is a bcrypt hash (starts with $2) or legacy SHA-256 (64 hex chars)
+    if (storedHash.startsWith('$2')) {
+      // New bcrypt hash - use bcrypt.compare
+      isValid = await bcrypt.compare(password, storedHash);
+    } else {
+      // Legacy SHA-256 hash - compute and compare
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      isValid = storedHash === computedHash;
     }
 
     if (!isValid) {

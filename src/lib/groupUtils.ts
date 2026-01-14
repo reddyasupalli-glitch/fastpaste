@@ -7,9 +7,10 @@ export function generateGroupCode(): string {
   return code;
 }
 
-// Client-side password hashing for room creation only
-// Password verification is done server-side via edge function
-export async function hashPassword(password: string): Promise<string> {
+// Password hashing is now done server-side via edge function using bcrypt
+// This function is kept for backward compatibility but should not be used for new rooms
+// New rooms should call the create-room edge function which handles hashing securely
+export async function hashPasswordLegacy(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);

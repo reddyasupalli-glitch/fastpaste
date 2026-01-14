@@ -227,6 +227,7 @@ export type Database = {
       }
     }
     Functions: {
+      hash_password_secure: { Args: { password: string }; Returns: string }
       verify_room_password: {
         Args: { input_password: string; room_code: string }
         Returns: boolean

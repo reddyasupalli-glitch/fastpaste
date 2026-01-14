@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { generateGroupCode, hashPassword } from '@/lib/groupUtils';
+import { generateGroupCode } from '@/lib/groupUtils';
 import { addToGroupHistory, getCreatorUsername } from '@/lib/groupHistory';
 
 interface Group {
@@ -27,70 +27,50 @@ export function useGroup() {
     setLoading(true);
     setError(null);
     
-    let attempts = 0;
-    const maxAttempts = 5;
-    
-    while (attempts < maxAttempts) {
-      const code = generateGroupCode();
-      
-      // Insert group without password_hash (moved to separate table)
-      const insertData = {
-        code,
-        room_type: options.isPrivate ? 'private' : 'public',
-      };
-      
-      const { data, error: insertError } = await supabase
-        .from('groups')
-        .insert(insertData)
-        .select('id, code, created_at, room_type')
-        .single();
-      
-      if (data) {
-        // If private room, insert password hash into separate secure table
-        if (options.isPrivate && options.password) {
-          const passwordHash = await hashPassword(options.password);
-          const { error: passwordError } = await supabase
-            .from('group_passwords')
-            .insert({
-              group_id: data.id,
-              password_hash: passwordHash,
-            });
-          
-          if (passwordError) {
-            console.error('Failed to save password:', passwordError);
-            // Clean up the created group
-            await supabase.from('groups').delete().eq('id', data.id);
-            setError('Failed to create private room');
-            setLoading(false);
-            return null;
-          }
+    try {
+      // Use edge function for secure server-side room creation with bcrypt password hashing
+      const { data, error: createError } = await supabase.functions.invoke('create-room', {
+        body: { 
+          isPrivate: options.isPrivate, 
+          password: options.password 
         }
-        
-        const groupData = { 
-          ...data, 
-          room_type: data.room_type as 'public' | 'private',
-          creatorUsername: username,
-        };
-        setGroup(groupData);
-        setCreatorUsername(username || null);
-        addToGroupHistory(data.code, 'created', username);
-        setLoading(false);
-        return groupData;
-      }
+      });
       
-      // If error is not a unique violation, break
-      if (insertError && !insertError.message.includes('duplicate')) {
-        setError(insertError.message);
+      if (createError) {
+        console.error('Room creation error:', createError);
+        setError('Failed to create room');
         setLoading(false);
         return null;
       }
       
-      attempts++;
+      if (data?.error) {
+        setError(data.error);
+        setLoading(false);
+        return null;
+      }
+      
+      if (data?.room) {
+        const groupData = { 
+          ...data.room, 
+          room_type: data.room.room_type as 'public' | 'private',
+          creatorUsername: username,
+        };
+        setGroup(groupData);
+        setCreatorUsername(username || null);
+        addToGroupHistory(data.room.code, 'created', username);
+        setLoading(false);
+        return groupData;
+      }
+      
+      setError('Failed to create room');
+      setLoading(false);
+      return null;
+    } catch (err) {
+      console.error('Room creation exception:', err);
+      setError('Failed to create room');
+      setLoading(false);
+      return null;
     }
-    
-    setError('Failed to generate unique room code');
-    setLoading(false);
-    return null;
   };
 
   const checkRoomType = async (code: string): Promise<{ id: string; code: string; created_at: string; room_type: 'public' | 'private' } | null> => {
