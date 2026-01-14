@@ -77,8 +77,9 @@ export function useGroup() {
   };
 
   const checkRoomType = async (code: string): Promise<{ id: string; code: string; created_at: string; room_type: 'public' | 'private' } | null> => {
+    // Use groups_public view to avoid exposing password_hash
     const { data, error: fetchError } = await supabase
-      .from('groups')
+      .from('groups_public')
       .select('id, code, created_at, room_type')
       .eq('code', code.toUpperCase())
       .maybeSingle();
@@ -94,9 +95,9 @@ export function useGroup() {
     setLoading(true);
     setError(null);
     
-    // First, check if room exists and its type (public info)
+    // Use groups_public view to check room info without exposing password_hash
     const { data: roomInfo, error: fetchError } = await supabase
-      .from('groups')
+      .from('groups_public')
       .select('id, code, created_at, room_type')
       .eq('code', code.toUpperCase())
       .maybeSingle();
