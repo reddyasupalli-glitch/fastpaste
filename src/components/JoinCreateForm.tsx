@@ -8,7 +8,6 @@ import { Plus, History, Trash2, Clock, UserPlus, Crown, Pencil, Check, X, Info, 
 import { getGroupHistory, removeFromGroupHistory, updateGroupName, GroupHistoryItem } from '@/lib/groupHistory';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AsuChat } from '@/components/AsuChat';
-import { CreateRoomDialog } from '@/components/CreateRoomDialog';
 import { FeedbackDialog } from '@/components/FeedbackDialog';
 import fastpasteLogo from '@/assets/fastpaste-logo.png';
 
@@ -30,7 +29,20 @@ export function JoinCreateForm({
   const [history, setHistory] = useState<GroupHistoryItem[]>([]);
   const [editingCode, setEditingCode] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  // Get stored username
+  const getStoredUsername = (): string | null => {
+    try {
+      return localStorage.getItem('chat-username');
+    } catch {
+      return null;
+    }
+  };
+
+  const handleCreateRoom = async () => {
+    const username = getStoredUsername();
+    await onCreate({ isPrivate: false }, username || undefined);
+  };
 
   useEffect(() => {
     setHistory(getGroupHistory());
@@ -136,12 +148,12 @@ export function JoinCreateForm({
           {/* Create Button */}
           <div>
             <Button
-              onClick={() => setCreateDialogOpen(true)}
+              onClick={handleCreateRoom}
               disabled={loading}
               className="w-full h-10 sm:h-11 text-sm sm:text-base gradient-primary text-primary-foreground hover:opacity-90 transition-opacity"
             >
               <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-              Create Room
+              {loading ? 'Creating...' : 'Create Room'}
             </Button>
           </div>
 
@@ -306,13 +318,6 @@ export function JoinCreateForm({
         </CardContent>
       </Card>
 
-      {/* Create Room Dialog */}
-      <CreateRoomDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        onCreate={onCreate}
-        loading={loading}
-      />
     </div>
   );
 }
