@@ -9,27 +9,22 @@ import { getGroupHistory, removeFromGroupHistory, updateGroupName, GroupHistoryI
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AsuChat } from '@/components/AsuChat';
 import { CreateRoomDialog } from '@/components/CreateRoomDialog';
-import { PasswordPromptDialog } from '@/components/PasswordPromptDialog';
 import { FeedbackDialog } from '@/components/FeedbackDialog';
 import fastpasteLogo from '@/assets/fastpaste-logo.png';
 
 
 interface JoinCreateFormProps {
-  onJoin: (code: string, password?: string) => Promise<unknown>;
+  onJoin: (code: string) => Promise<unknown>;
   onCreate: (options: { isPrivate: boolean; password?: string }, username?: string) => Promise<unknown>;
   loading: boolean;
   error: string | null;
-  pendingJoinGroup: { id: string; code: string; created_at: string } | null;
-  onCancelPendingJoin: () => void;
 }
 
 export function JoinCreateForm({ 
   onJoin, 
   onCreate, 
   loading, 
-  error, 
-  pendingJoinGroup,
-  onCancelPendingJoin 
+  error
 }: JoinCreateFormProps) {
   const [joinCode, setJoinCode] = useState('');
   const [history, setHistory] = useState<GroupHistoryItem[]>([]);
@@ -55,12 +50,6 @@ export function JoinCreateForm({
 
   const handleRejoin = async (code: string) => {
     await onJoin(code);
-  };
-
-  const handlePasswordSubmit = async (password: string) => {
-    if (pendingJoinGroup) {
-      await onJoin(pendingJoinGroup.code, password);
-    }
   };
 
   const handleRemoveFromHistory = (code: string, e: React.MouseEvent) => {
@@ -185,7 +174,7 @@ export function JoinCreateForm({
             <AsuChat />
           </div>
 
-          {error && !pendingJoinGroup && (
+          {error && (
             <p className="text-center text-sm text-destructive">{error}</p>
           )}
 
@@ -323,16 +312,6 @@ export function JoinCreateForm({
         onOpenChange={setCreateDialogOpen}
         onCreate={onCreate}
         loading={loading}
-      />
-
-      {/* Password Prompt Dialog */}
-      <PasswordPromptDialog
-        open={!!pendingJoinGroup}
-        roomCode={pendingJoinGroup?.code || ''}
-        onSubmit={handlePasswordSubmit}
-        onCancel={onCancelPendingJoin}
-        loading={loading}
-        error={error}
       />
     </div>
   );

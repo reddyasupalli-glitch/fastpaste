@@ -14,42 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      group_passwords: {
-        Row: {
-          created_at: string
-          group_id: string
-          id: string
-          password_hash: string
-        }
-        Insert: {
-          created_at?: string
-          group_id: string
-          id?: string
-          password_hash: string
-        }
-        Update: {
-          created_at?: string
-          group_id?: string
-          id?: string
-          password_hash?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_passwords_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: true
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "group_passwords_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: true
-            referencedRelation: "groups_public"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       groups: {
         Row: {
           code: string
@@ -227,11 +191,7 @@ export type Database = {
       }
     }
     Functions: {
-      hash_password_secure: { Args: { password: string }; Returns: string }
-      verify_room_password: {
-        Args: { input_password: string; room_code: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
