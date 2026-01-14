@@ -124,6 +124,48 @@ export type Database = {
           },
         ]
       }
+      room_sessions: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          last_seen_at: string
+          session_token: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          last_seen_at?: string
+          session_token: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          last_seen_at?: string
+          session_token?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_sessions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_sessions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       groups_public: {
