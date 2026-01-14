@@ -14,6 +14,7 @@ import { useUsername } from '@/hooks/useUsername';
 import { useChatBackground } from '@/hooks/useChatBackground';
 import { useReactions } from '@/hooks/useReactions';
 import { useSwipeToReply } from '@/hooks/useSwipeToReply';
+import { useRoomSession } from '@/hooks/useRoomSession';
 import { cn } from '@/lib/utils';
 
 interface ChatRoomProps {
@@ -28,8 +29,8 @@ export function ChatRoom({ groupId, groupCode, roomType, creatorUsername, onLeav
   const { username, setUsername, hasUsername } = useUsername();
   const isCreator = username === creatorUsername;
   
-  // Debug logging for kick feature
-  console.log('ChatRoom Debug:', { username, creatorUsername, isCreator, hasKickAccess: isCreator && !!creatorUsername });
+  // Create room session for secure message access
+  const { sessionActive, leaveRoom } = useRoomSession(groupId, username);
   
   const { messages, loading, isAIThinking, sendMessage, sendFileMessage, deleteMessage } = useMessages(groupId, username);
   const { onlineCount, onlineUsers, typingUsers, kickedUsers, setTyping, markMessageSeen, getSeenBy, kickUser } = usePresence(groupId, username, isCreator);
@@ -57,8 +58,15 @@ export function ChatRoom({ groupId, groupCode, roomType, creatorUsername, onLeav
 
   const handleKickedClose = () => {
     setShowKickedDialog(false);
+    leaveRoom();
     onLeave();
   };
+
+  // Handle leaving room - clean up session
+  const handleLeave = useCallback(() => {
+    leaveRoom();
+    onLeave();
+  }, [leaveRoom, onLeave]);
 
   // Fetch reactions when messages change
   useEffect(() => {
@@ -107,7 +115,7 @@ export function ChatRoom({ groupId, groupCode, roomType, creatorUsername, onLeav
         <GroupHeader 
           code={groupCode} 
           roomType={roomType}
-          onLeave={onLeave} 
+          onLeave={handleLeave} 
           onlineCount={onlineCount}
           onlineUsers={onlineUsers}
           username={username}

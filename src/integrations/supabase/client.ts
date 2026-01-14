@@ -5,6 +5,24 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+const SESSION_TOKEN_KEY = 'room-session-token';
+
+function getOrCreateSessionToken(): string {
+  let token = localStorage.getItem(SESSION_TOKEN_KEY);
+  if (!token) {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    token = Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+    localStorage.setItem(SESSION_TOKEN_KEY, token);
+  }
+  return token;
+}
+
+// Export session token getter for use in other modules
+export function getSessionToken(): string {
+  return getOrCreateSessionToken();
+}
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
@@ -13,5 +31,10 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+  },
+  global: {
+    headers: {
+      'x-session-token': getOrCreateSessionToken(),
+    },
+  },
 });
