@@ -8,12 +8,10 @@ const Index = () => {
     group, 
     loading, 
     error, 
-    pendingJoinGroup,
     creatorUsername,
     createGroup, 
     joinGroup, 
-    leaveGroup,
-    cancelPendingJoin 
+    leaveGroup
   } = useGroup();
 
   if (group) {
@@ -39,8 +37,6 @@ const Index = () => {
         onCreate={createGroup}
         loading={loading}
         error={error}
-        pendingJoinGroup={pendingJoinGroup}
-        onCancelPendingJoin={cancelPendingJoin}
       />
     </>
   );
