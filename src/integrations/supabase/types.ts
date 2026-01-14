@@ -14,13 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      group_passwords: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          password_hash: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          password_hash: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          password_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_passwords_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: true
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_passwords_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: true
+            referencedRelation: "groups_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       groups: {
         Row: {
           code: string
           created_at: string
           id: string
           last_activity_at: string
-          password_hash: string | null
           room_type: string
         }
         Insert: {
@@ -28,7 +63,6 @@ export type Database = {
           created_at?: string
           id?: string
           last_activity_at?: string
-          password_hash?: string | null
           room_type?: string
         }
         Update: {
@@ -36,7 +70,6 @@ export type Database = {
           created_at?: string
           id?: string
           last_activity_at?: string
-          password_hash?: string | null
           room_type?: string
         }
         Relationships: []
@@ -194,7 +227,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      verify_room_password: {
+        Args: { input_password: string; room_code: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

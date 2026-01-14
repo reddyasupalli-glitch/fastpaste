@@ -28,44 +28,6 @@ function checkRateLimit(identifier: string): boolean {
   return true;
 }
 
-// Secure password hashing with salt using Web Crypto API
-async function hashPasswordWithSalt(password: string, salt: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(salt + password + salt);
-  
-  // Use PBKDF2 for secure password hashing
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(password),
-    "PBKDF2",
-    false,
-    ["deriveBits"]
-  );
-  
-  const derivedBits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      salt: encoder.encode(salt),
-      iterations: 100000,
-      hash: "SHA-256",
-    },
-    keyMaterial,
-    256
-  );
-  
-  const hashArray = Array.from(new Uint8Array(derivedBits));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// Legacy SHA-256 hash for backward compatibility
-async function legacyHash(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -103,15 +65,15 @@ serve(async (req) => {
       });
     }
 
-    // Create Supabase client with service role
+    // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    // Fetch room (using service role to access password_hash)
+    // Fetch room info (password_hash is no longer in groups table)
     const { data: room, error: fetchError } = await supabase
       .from('groups')
-      .select('id, code, created_at, room_type, password_hash')
+      .select('id, code, created_at, room_type')
       .eq('code', roomCode.toUpperCase())
       .maybeSingle();
 
@@ -145,16 +107,27 @@ serve(async (req) => {
       });
     }
 
-    if (!room.password_hash) {
+    // Verify password using secure database function (never exposes hash)
+    const { data: isValid, error: verifyError } = await supabase
+      .rpc('verify_room_password', { 
+        room_code: roomCode, 
+        input_password: password 
+      });
+
+    if (verifyError) {
+      console.error("Password verification error:", verifyError);
+      return new Response(JSON.stringify({ error: "Verification failed" }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (isValid === null) {
       return new Response(JSON.stringify({ error: "Room has no password set" }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    // Verify password (legacy SHA-256 format)
-    const inputHash = await legacyHash(password);
-    const isValid = inputHash === room.password_hash;
 
     if (!isValid) {
       // Add small delay to prevent timing attacks
@@ -165,7 +138,7 @@ serve(async (req) => {
       });
     }
 
-    // Password is correct - return room info without password_hash
+    // Password is correct - return room info
     return new Response(JSON.stringify({ 
       valid: true,
       room: {

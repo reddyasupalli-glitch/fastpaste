@@ -33,14 +33,11 @@ export function useGroup() {
     while (attempts < maxAttempts) {
       const code = generateGroupCode();
       
-      let insertData: { code: string; room_type: string; password_hash?: string } = {
+      // Insert group without password_hash (moved to separate table)
+      const insertData = {
         code,
         room_type: options.isPrivate ? 'private' : 'public',
       };
-      
-      if (options.isPrivate && options.password) {
-        insertData.password_hash = await hashPassword(options.password);
-      }
       
       const { data, error: insertError } = await supabase
         .from('groups')
@@ -49,6 +46,26 @@ export function useGroup() {
         .single();
       
       if (data) {
+        // If private room, insert password hash into separate secure table
+        if (options.isPrivate && options.password) {
+          const passwordHash = await hashPassword(options.password);
+          const { error: passwordError } = await supabase
+            .from('group_passwords')
+            .insert({
+              group_id: data.id,
+              password_hash: passwordHash,
+            });
+          
+          if (passwordError) {
+            console.error('Failed to save password:', passwordError);
+            // Clean up the created group
+            await supabase.from('groups').delete().eq('id', data.id);
+            setError('Failed to create private room');
+            setLoading(false);
+            return null;
+          }
+        }
+        
         const groupData = { 
           ...data, 
           room_type: data.room_type as 'public' | 'private',
