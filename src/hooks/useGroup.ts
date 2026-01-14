@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { generateGroupCode, hashPassword, verifyPassword } from '@/lib/groupUtils';
+import { generateGroupCode, hashPassword } from '@/lib/groupUtils';
 import { addToGroupHistory, getCreatorUsername } from '@/lib/groupHistory';
 
 interface Group {
@@ -94,9 +94,10 @@ export function useGroup() {
     setLoading(true);
     setError(null);
     
-    const { data, error: fetchError } = await supabase
+    // First, check if room exists and its type (public info)
+    const { data: roomInfo, error: fetchError } = await supabase
       .from('groups')
-      .select('id, code, created_at, room_type, password_hash')
+      .select('id, code, created_at, room_type')
       .eq('code', code.toUpperCase())
       .maybeSingle();
     
@@ -106,44 +107,60 @@ export function useGroup() {
       return null;
     }
     
-    if (!data) {
+    if (!roomInfo) {
       setError('Room not found');
       setLoading(false);
       return null;
     }
     
     // Check if room is private and requires password
-    if (data.room_type === 'private') {
+    if (roomInfo.room_type === 'private') {
       if (!password) {
         // Store pending group and signal that password is required
-        setPendingJoinGroup({ id: data.id, code: data.code, created_at: data.created_at });
+        setPendingJoinGroup({ id: roomInfo.id, code: roomInfo.code, created_at: roomInfo.created_at });
         setLoading(false);
         return null;
       }
       
-      // Verify password
-      if (!data.password_hash || !(await verifyPassword(password, data.password_hash))) {
-        setError('Incorrect password');
+      // Verify password via secure edge function
+      try {
+        const { data: verifyResult, error: verifyError } = await supabase.functions.invoke('verify-room-password', {
+          body: { roomCode: code, password }
+        });
+        
+        if (verifyError) {
+          setError('Password verification failed');
+          setLoading(false);
+          return null;
+        }
+        
+        if (!verifyResult?.valid) {
+          setError(verifyResult?.error || 'Incorrect password');
+          setLoading(false);
+          return null;
+        }
+      } catch (err) {
+        setError('Failed to verify password');
         setLoading(false);
         return null;
       }
     }
     
     // Check if we're the creator (from local history)
-    const storedCreator = getCreatorUsername(data.code);
+    const storedCreator = getCreatorUsername(roomInfo.code);
     
     const groupData = { 
-      id: data.id, 
-      code: data.code, 
-      created_at: data.created_at, 
-      room_type: data.room_type as 'public' | 'private',
+      id: roomInfo.id, 
+      code: roomInfo.code, 
+      created_at: roomInfo.created_at, 
+      room_type: roomInfo.room_type as 'public' | 'private',
       creatorUsername: storedCreator,
     };
     
     setGroup(groupData);
     setPendingJoinGroup(null);
     setCreatorUsername(storedCreator || null);
-    addToGroupHistory(data.code, 'joined', storedCreator);
+    addToGroupHistory(roomInfo.code, 'joined', storedCreator);
     setLoading(false);
     return groupData;
   };

@@ -5,20 +5,62 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Simple in-memory rate limiting (resets on function cold start)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 5; // 5 image generations
+const RATE_LIMIT_WINDOW = 60 * 1000; // per minute
+
+function checkRateLimit(identifier: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(identifier);
+  
+  if (!record || now > record.resetAt) {
+    rateLimitMap.set(identifier, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+  
+  if (record.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Rate limiting by IP
+    const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
+    if (!checkRateLimit(clientIP)) {
+      return new Response(JSON.stringify({ 
+        error: "Too many background generation requests. Please try again later." 
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { prompt } = await req.json();
+    
+    // Input validation
+    if (!prompt || typeof prompt !== 'string' || prompt.length > 500) {
+      return new Response(JSON.stringify({ error: "Invalid prompt" }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Generating background with prompt:", prompt);
+    console.log("Generating background with prompt:", prompt.substring(0, 100));
 
     const enhancedPrompt = `Create a beautiful abstract background image suitable for a chat application. The image should be: ${prompt}. Make it subtle, elegant, and not too distracting. No text, no faces, no specific objects - just abstract patterns, gradients, or textures. 16:9 aspect ratio, high quality.`;
 
