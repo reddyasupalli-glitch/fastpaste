@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Plus, History, Trash2, Clock, UserPlus, Crown, Pencil, Check, X, Info, Instagram, Mail } from 'lucide-react';
+import { Plus, History, Trash2, Clock, UserPlus, Crown, Pencil, Check, X, Info, Instagram, Mail, Loader2 } from 'lucide-react';
 import { getGroupHistory, removeFromGroupHistory, updateGroupName, GroupHistoryItem } from '@/lib/groupHistory';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AsuChat } from '@/components/AsuChat';
@@ -152,7 +152,11 @@ export function JoinCreateForm({
               disabled={loading}
               className="w-full h-10 sm:h-11 text-sm sm:text-base gradient-primary text-primary-foreground hover:opacity-90 transition-opacity"
             >
-              <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+              )}
               {loading ? 'Creating...' : 'Create Room'}
             </Button>
           </div>
@@ -166,18 +170,26 @@ export function JoinCreateForm({
 
           {/* Join Form - Auto-join on 4 digits */}
           <div className="space-y-2 sm:space-y-3">
-            <Input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              placeholder="Enter 4-digit code"
-              value={joinCode}
-              onChange={handleCodeChange}
-              className="text-center font-mono text-xl sm:text-2xl tracking-[0.5em] h-12 sm:h-14 clean-input"
-              maxLength={4}
-            />
+            <div className="relative">
+              <Input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="Enter 4-digit code"
+                value={joinCode}
+                onChange={handleCodeChange}
+                className="text-center font-mono text-xl sm:text-2xl tracking-[0.5em] h-12 sm:h-14 clean-input"
+                maxLength={4}
+                disabled={loading}
+              />
+              {loading && joinCode.length === 4 && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </div>
             <p className="text-center text-xs text-muted-foreground">
-              Room will open automatically when code is complete
+              {loading && joinCode.length === 4 ? 'Joining room...' : 'Room will open automatically when code is complete'}
             </p>
           </div>
 
