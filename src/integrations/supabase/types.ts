@@ -191,7 +191,20 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      get_room_participants: {
+        Args: { p_group_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          last_seen_at: string
+          username: string
+        }[]
+      }
+      get_session_token: { Args: never; Returns: string }
+      user_is_in_room: {
+        Args: { p_group_id: string; p_session_token: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
