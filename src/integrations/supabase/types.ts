@@ -112,13 +112,6 @@ export type Database = {
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "messages_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       room_sessions: {
@@ -154,41 +147,11 @@ export type Database = {
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "room_sessions_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
     }
     Views: {
-      groups_public: {
-        Row: {
-          code: string | null
-          created_at: string | null
-          id: string | null
-          last_activity_at: string | null
-          room_type: string | null
-        }
-        Insert: {
-          code?: string | null
-          created_at?: string | null
-          id?: string | null
-          last_activity_at?: string | null
-          room_type?: string | null
-        }
-        Update: {
-          code?: string | null
-          created_at?: string | null
-          id?: string | null
-          last_activity_at?: string | null
-          room_type?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       get_room_participants: {
@@ -201,6 +164,7 @@ export type Database = {
         }[]
       }
       get_session_token: { Args: never; Returns: string }
+      get_verified_username: { Args: never; Returns: string }
       is_code_lookup: { Args: never; Returns: boolean }
       join_group_by_code: {
         Args: { p_code: string }
