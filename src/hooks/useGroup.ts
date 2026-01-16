@@ -68,18 +68,17 @@ export function useGroup() {
     setLoading(true);
     setError(null);
     
-    // Use groups_public view to check room info
-    const { data: roomInfo, error: fetchError } = await supabase
-      .from('groups_public')
-      .select('id, code, created_at, room_type')
-      .eq('code', code.toUpperCase())
-      .maybeSingle();
+    // Use secure RPC function to look up room by exact code
+    const { data: roomData, error: fetchError } = await supabase
+      .rpc('join_group_by_code', { p_code: code.toUpperCase() });
     
     if (fetchError) {
       setError(fetchError.message);
       setLoading(false);
       return null;
     }
+    
+    const roomInfo = roomData?.[0];
     
     if (!roomInfo) {
       setError('Room not found');

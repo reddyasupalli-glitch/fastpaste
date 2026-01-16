@@ -201,6 +201,16 @@ export type Database = {
         }[]
       }
       get_session_token: { Args: never; Returns: string }
+      is_code_lookup: { Args: never; Returns: boolean }
+      join_group_by_code: {
+        Args: { p_code: string }
+        Returns: {
+          code: string
+          created_at: string
+          id: string
+          room_type: string
+        }[]
+      }
       user_is_in_room: {
         Args: { p_group_id: string; p_session_token: string }
         Returns: boolean
