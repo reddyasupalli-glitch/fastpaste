@@ -30,23 +30,16 @@ export function useRoomSession(groupId: string | null, username: string | null) 
     if (!groupId || !username) return false;
     
     setLoading(true);
-    const sessionToken = getOrCreateSessionToken();
     
     try {
-      // Try to upsert the session (insert or update if exists)
+      // Use secure RPC function to create/update session
+      // This ensures the session token is hashed server-side
+      // and prevents username changes after initial join
       const { error } = await supabase
-        .from('room_sessions')
-        .upsert(
-          {
-            group_id: groupId,
-            session_token: sessionToken,
-            username: username,
-            last_seen_at: new Date().toISOString(),
-          },
-          {
-            onConflict: 'group_id,session_token',
-          }
-        );
+        .rpc('create_room_session', {
+          p_group_id: groupId,
+          p_username: username,
+        });
       
       if (error) {
         console.error('Failed to create room session:', error);
