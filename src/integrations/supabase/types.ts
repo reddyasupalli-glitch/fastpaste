@@ -154,6 +154,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_group: {
+        Args: { p_code: string }
+        Returns: {
+          code: string
+          created_at: string
+          id: string
+          room_type: string
+        }[]
+      }
       create_room_session: {
         Args: { p_group_id: string; p_username: string }
         Returns: boolean

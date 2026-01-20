@@ -27,30 +27,28 @@ export function useGroup() {
     while (attempts < maxAttempts) {
       const code = generateGroupCode();
       
+      // Use secure RPC function to create group
       const { data, error: insertError } = await supabase
-        .from('groups')
-        .insert({
-          code,
-          room_type: 'public',
-        })
-        .select('id, code, created_at, room_type')
-        .single();
+        .rpc('create_group', { p_code: code });
       
-      if (data) {
+      if (data && data.length > 0) {
+        const row = data[0];
         const groupData = { 
-          ...data, 
+          id: row.id,
+          code: row.code,
+          created_at: row.created_at,
           room_type: 'public' as const,
           creatorUsername: username,
         };
         setGroup(groupData);
         setCreatorUsername(username || null);
-        addToGroupHistory(data.code, 'created', username);
+        addToGroupHistory(row.code, 'created', username);
         setLoading(false);
         return groupData;
       }
       
-      // If error is not a unique violation, break
-      if (insertError && !insertError.message.includes('duplicate')) {
+      // If error is not a unique violation, try again
+      if (insertError && !insertError.message.includes('already exists')) {
         setError(insertError.message);
         setLoading(false);
         return null;
