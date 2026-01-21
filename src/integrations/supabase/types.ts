@@ -180,6 +180,7 @@ export type Database = {
       get_verified_username: { Args: never; Returns: string }
       hash_session_token: { Args: { token: string }; Returns: string }
       is_code_lookup: { Args: never; Returns: boolean }
+      is_room_creator: { Args: { p_group_id: string }; Returns: boolean }
       join_group_by_code: {
         Args: { p_code: string }
         Returns: {
