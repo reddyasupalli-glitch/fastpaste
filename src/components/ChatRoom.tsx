@@ -32,9 +32,10 @@ export function ChatRoom({ groupId, groupCode, roomType, creatorUsername, onLeav
   // Create room session for secure message access
   const { sessionActive, leaveRoom } = useRoomSession(groupId, username);
   
-  const { messages, loading, isAIThinking, sendMessage, sendFileMessage, deleteMessage } = useMessages(groupId, username);
-  const { onlineCount, onlineUsers, typingUsers, kickedUsers, setTyping, markMessageSeen, getSeenBy, kickUser } = usePresence(groupId, username, isCreator);
-  const { fetchReactions, toggleReaction, getReactionsForMessage } = useReactions(groupId, username);
+  // Only fetch messages and setup presence once session is active
+  const { messages, loading, isAIThinking, sendMessage, sendFileMessage, deleteMessage } = useMessages(sessionActive ? groupId : null, username);
+  const { onlineCount, onlineUsers, typingUsers, kickedUsers, setTyping, markMessageSeen, getSeenBy, kickUser } = usePresence(sessionActive ? groupId : null, username, isCreator);
+  const { fetchReactions, toggleReaction, getReactionsForMessage } = useReactions(sessionActive ? groupId : null, username);
   const { quotedMessage, handleSwipeReply, dismissQuote } = useSwipeToReply();
   const { 
     backgroundId, 
@@ -93,6 +94,18 @@ export function ChatRoom({ groupId, groupCode, roomType, creatorUsername, onLeav
 
   if (!hasUsername) {
     return <UsernamePrompt onSubmit={setUsername} />;
+  }
+
+  // Show loading while session is being created
+  if (!sessionActive) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Joining room...</p>
+        </div>
+      </div>
+    );
   }
 
   const backgroundStyle = currentBackground.isCustom && currentBackground.imageUrl
