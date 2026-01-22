@@ -87,7 +87,17 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
   const isImage = message.file_type?.startsWith('image/');
 
   const renderSeenBy = () => {
-    if (!isOwn || seenBy.length === 0) return null;
+    if (!isOwn) return null;
+    
+    // Show single check if sent, double check with blue if seen
+    if (seenBy.length === 0) {
+      return (
+        <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] sm:text-xs text-muted-foreground">
+          <Check className="h-3 w-3" />
+          <span>Sent</span>
+        </div>
+      );
+    }
     
     const seenText = seenBy.length === 1 
       ? `Seen by ${seenBy[0]}`

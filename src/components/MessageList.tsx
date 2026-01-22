@@ -149,9 +149,14 @@ export function MessageList({
       >
         <div className="mx-auto w-full max-w-4xl">
           {messages.map((message, index) => {
+            const isOwnMessage = message.username === currentUsername;
+            // Show read receipts for the last own message in the conversation
             const isLastOwnMessage = 
-              message.username === currentUsername && 
+              isOwnMessage && 
               messages.slice(index + 1).every(m => m.username !== currentUsername);
+            
+            // Get seen by users for own messages
+            const seenByUsers = isOwnMessage && getSeenBy ? getSeenBy(message.id) : [];
             
             const handleSwipe = () => {
               if (onSwipeReply) {
@@ -172,8 +177,8 @@ export function MessageList({
               >
                 <MessageBubble 
                   message={message} 
-                  isOwn={message.username === currentUsername}
-                  seenBy={isLastOwnMessage && getSeenBy ? getSeenBy(message.id) : undefined}
+                  isOwn={isOwnMessage}
+                  seenBy={isLastOwnMessage ? seenByUsers : undefined}
                   reactions={getReactionsForMessage ? getReactionsForMessage(message.id) : undefined}
                   onToggleReaction={onToggleReaction ? (emoji) => onToggleReaction(message.id, emoji) : undefined}
                 />

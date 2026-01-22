@@ -40,79 +40,114 @@ export function usePresence(groupId: string | null, username?: string, isCreator
     
     if (!groupId) return;
 
-    const channel = supabase.channel(`presence-${groupId}`, {
-      config: {
-        presence: {
-          key: odlkRef.current,
+    let retryCount = 0;
+    const maxRetries = 5;
+    let retryTimeout: NodeJS.Timeout | null = null;
+
+    const setupPresenceChannel = () => {
+      // Cleanup previous channel
+      if (channelRef.current) {
+        channelRef.current.untrack();
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+
+      const channel = supabase.channel(`presence-${groupId}-${Date.now()}`, {
+        config: {
+          presence: {
+            key: odlkRef.current,
+          },
         },
-      },
-    });
-
-    channelRef.current = channel;
-
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        if (!isMountedRef.current) return;
-        
-        const state = channel.presenceState<PresenceState>();
-        const users: OnlineUser[] = [];
-        const typing: string[] = [];
-        const statuses: UserReadStatus[] = [];
-        
-        Object.values(state).forEach((presences) => {
-          presences.forEach((presence: PresenceState) => {
-            if (presence.username) {
-              users.push({
-                username: presence.username,
-                isCreator: presence.isCreator,
-              });
-              if (presence.isTyping && presence.username !== username) {
-                typing.push(presence.username);
-              }
-              statuses.push({
-                username: presence.username,
-                lastSeenMessageId: presence.lastSeenMessageId,
-              });
-            }
-          });
-        });
-        
-        setOnlineCount(Object.keys(state).length);
-        setOnlineUsers(users);
-        setTypingUsers(typing);
-        setReadStatuses(statuses);
-      })
-      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        console.log('User joined:', key, newPresences);
-      })
-      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        console.log('User left:', key, leftPresences);
-      })
-      .on('broadcast', { event: 'kick' }, (payload) => {
-        console.log('Kick event received:', payload);
-        if (payload.payload?.username === username) {
-          setKickedUsers(prev => [...prev, username]);
-        }
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED' && isMountedRef.current) {
-          channel.track({
-            odlk: odlkRef.current,
-            username: username || 'Anonymous',
-            online_at: new Date().toISOString(),
-            isTyping: false,
-            lastSeenMessageId: null,
-            isCreator: isCreator || false,
-          });
-          console.log('Presence tracked for group:', groupId);
-        }
       });
+
+      channelRef.current = channel;
+
+      channel
+        .on('presence', { event: 'sync' }, () => {
+          if (!isMountedRef.current) return;
+          
+          const state = channel.presenceState<PresenceState>();
+          const users: OnlineUser[] = [];
+          const typing: string[] = [];
+          const statuses: UserReadStatus[] = [];
+          
+          Object.values(state).forEach((presences) => {
+            presences.forEach((presence: PresenceState) => {
+              if (presence.username) {
+                users.push({
+                  username: presence.username,
+                  isCreator: presence.isCreator,
+                });
+                if (presence.isTyping && presence.username !== username) {
+                  typing.push(presence.username);
+                }
+                statuses.push({
+                  username: presence.username,
+                  lastSeenMessageId: presence.lastSeenMessageId,
+                });
+              }
+            });
+          });
+          
+          setOnlineCount(Object.keys(state).length);
+          setOnlineUsers(users);
+          setTypingUsers(typing);
+          setReadStatuses(statuses);
+        })
+        .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+          console.log('User joined:', key, newPresences);
+        })
+        .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+          console.log('User left:', key, leftPresences);
+        })
+        .on('broadcast', { event: 'kick' }, (payload) => {
+          console.log('Kick event received:', payload);
+          if (payload.payload?.username === username) {
+            setKickedUsers(prev => [...prev, username]);
+          }
+        })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED' && isMountedRef.current) {
+            retryCount = 0; // Reset on success
+            channel.track({
+              odlk: odlkRef.current,
+              username: username || 'Anonymous',
+              online_at: new Date().toISOString(),
+              isTyping: currentStateRef.current.isTyping,
+              lastSeenMessageId: currentStateRef.current.lastSeenMessageId,
+              isCreator: isCreator || false,
+            });
+            console.log('Presence tracked for group:', groupId);
+          } else if (status === 'CHANNEL_ERROR') {
+            console.warn('Presence channel error, will retry...');
+            
+            if (retryCount < maxRetries && isMountedRef.current) {
+              const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+              retryCount++;
+              console.log(`Retrying presence connection in ${delay}ms (attempt ${retryCount}/${maxRetries})`);
+              
+              retryTimeout = setTimeout(() => {
+                if (isMountedRef.current) {
+                  setupPresenceChannel();
+                }
+              }, delay);
+            }
+          }
+        });
+    };
+
+    setupPresenceChannel();
 
     return () => {
       isMountedRef.current = false;
-      channel.untrack();
-      supabase.removeChannel(channel);
-      channelRef.current = null;
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
+      if (channelRef.current) {
+        channelRef.current.untrack();
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [groupId, username, isCreator]);
 
