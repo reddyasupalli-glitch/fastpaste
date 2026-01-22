@@ -60,14 +60,14 @@ export function useRoomSession(groupId: string | null, username: string | null) 
   const leaveRoom = useCallback(async () => {
     if (!groupId) return;
     
-    const sessionToken = getOrCreateSessionToken();
-    
     try {
+      // Use RLS policy which checks session_token = get_session_token()
+      // The get_session_token() function hashes the x-session-token header
+      // so we just need to filter by group_id and RLS handles the token check
       await supabase
         .from('room_sessions')
         .delete()
-        .eq('group_id', groupId)
-        .eq('session_token', sessionToken);
+        .eq('group_id', groupId);
       
       setSessionActive(false);
     } catch (err) {
@@ -78,14 +78,13 @@ export function useRoomSession(groupId: string | null, username: string | null) 
   const updateLastSeen = useCallback(async () => {
     if (!groupId || !sessionActive) return;
     
-    const sessionToken = getOrCreateSessionToken();
-    
     try {
+      // Use RLS policy which checks session_token = get_session_token()
+      // The get_session_token() function hashes the x-session-token header
       await supabase
         .from('room_sessions')
         .update({ last_seen_at: new Date().toISOString() })
-        .eq('group_id', groupId)
-        .eq('session_token', sessionToken);
+        .eq('group_id', groupId);
     } catch (err) {
       // Silently fail - not critical
     }
