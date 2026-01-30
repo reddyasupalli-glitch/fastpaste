@@ -135,36 +135,75 @@ const FlappyBird = () => {
 
   return (
     <div className="flex flex-col items-center">
+      {/* Score and controls */}
       <div className="mb-4 flex items-center gap-4">
-        <span className="text-xl font-semibold text-foreground">Score: {score}</span>
-        <Button variant="outline" size="sm" onClick={resetGame} className="gap-1">
-          <RotateCcw className="h-4 w-4" />
-          Restart
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Score:</span>
+          <span className="text-xl font-cyber font-bold neon-text-purple">{score}</span>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={resetGame} 
+          className="gap-1 cyber-button text-xs font-mono neon-border-purple"
+        >
+          <RotateCcw className="h-3 w-3" />
+          RESTART
         </Button>
       </div>
 
+      {/* Game area */}
       <div
         ref={gameRef}
         onClick={handleClick}
-        className="relative overflow-hidden rounded-lg border-2 border-border cursor-pointer select-none"
+        className="relative overflow-hidden rounded-lg cursor-pointer select-none neon-border-purple"
         style={{
           width: GAME_WIDTH,
           height: GAME_HEIGHT,
-          background: 'linear-gradient(to bottom, hsl(var(--primary) / 0.2), hsl(var(--primary) / 0.05))',
+          background: 'linear-gradient(180deg, hsl(240 20% 8%) 0%, hsl(280 30% 10%) 50%, hsl(240 20% 5%) 100%)',
+          boxShadow: '0 0 30px hsl(280 100% 60% / 0.2), inset 0 0 20px hsl(280 100% 60% / 0.05)',
         }}
       >
+        {/* Stars / particles background */}
+        {Array.from({ length: 30 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-0.5 h-0.5 rounded-full bg-primary/50"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animation: `pulse ${2 + Math.random() * 2}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 2}s`,
+            }}
+          />
+        ))}
+
+        {/* Grid lines */}
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(hsl(280 100% 60% / 0.2) 1px, transparent 1px),
+              linear-gradient(90deg, hsl(280 100% 60% / 0.2) 1px, transparent 1px)
+            `,
+            backgroundSize: '40px 40px',
+          }}
+        />
+
         {/* Bird */}
         <motion.div
-          className="absolute bg-primary rounded-full shadow-lg flex items-center justify-center text-primary-foreground font-bold"
+          className="absolute rounded-full flex items-center justify-center font-bold text-lg"
           style={{
             width: BIRD_SIZE,
             height: BIRD_SIZE,
             left: 50,
             top: birdY,
             transform: `rotate(${Math.min(birdVelocity * 3, 45)}deg)`,
+            background: 'linear-gradient(135deg, hsl(280 100% 60%), hsl(320 100% 60%))',
+            boxShadow: '0 0 15px hsl(280 100% 60%), 0 0 30px hsl(280 100% 60% / 0.5)',
           }}
         >
-          🐦
+          ▸
         </motion.div>
 
         {/* Pipes */}
@@ -172,30 +211,46 @@ const FlappyBird = () => {
           <div key={index}>
             {/* Top pipe */}
             <div
-              className="absolute bg-green-500 dark:bg-green-600 rounded-b-lg"
+              className="absolute rounded-b-lg"
               style={{
                 width: PIPE_WIDTH,
                 height: pipe.topHeight,
                 left: pipe.x,
                 top: 0,
+                background: 'linear-gradient(180deg, hsl(180 100% 30%), hsl(180 100% 40%))',
+                boxShadow: '0 0 10px hsl(180 100% 50% / 0.5), inset 0 0 10px hsl(180 100% 60% / 0.2)',
+                border: '1px solid hsl(180 100% 50% / 0.5)',
               }}
             >
               <div 
-                className="absolute bottom-0 left-[-5px] w-[60px] h-[20px] bg-green-600 dark:bg-green-700 rounded"
+                className="absolute bottom-0 left-[-5px] w-[60px] h-[20px] rounded"
+                style={{
+                  background: 'linear-gradient(180deg, hsl(180 100% 45%), hsl(180 100% 35%))',
+                  boxShadow: '0 0 10px hsl(180 100% 50% / 0.5)',
+                  border: '1px solid hsl(180 100% 50% / 0.5)',
+                }}
               />
             </div>
             {/* Bottom pipe */}
             <div
-              className="absolute bg-green-500 dark:bg-green-600 rounded-t-lg"
+              className="absolute rounded-t-lg"
               style={{
                 width: PIPE_WIDTH,
                 height: GAME_HEIGHT - pipe.topHeight - PIPE_GAP,
                 left: pipe.x,
                 top: pipe.topHeight + PIPE_GAP,
+                background: 'linear-gradient(180deg, hsl(180 100% 40%), hsl(180 100% 30%))',
+                boxShadow: '0 0 10px hsl(180 100% 50% / 0.5), inset 0 0 10px hsl(180 100% 60% / 0.2)',
+                border: '1px solid hsl(180 100% 50% / 0.5)',
               }}
             >
               <div 
-                className="absolute top-0 left-[-5px] w-[60px] h-[20px] bg-green-600 dark:bg-green-700 rounded"
+                className="absolute top-0 left-[-5px] w-[60px] h-[20px] rounded"
+                style={{
+                  background: 'linear-gradient(180deg, hsl(180 100% 35%), hsl(180 100% 45%))',
+                  boxShadow: '0 0 10px hsl(180 100% 50% / 0.5)',
+                  border: '1px solid hsl(180 100% 50% / 0.5)',
+                }}
               />
             </div>
           </div>
@@ -203,30 +258,48 @@ const FlappyBird = () => {
 
         {/* Ground */}
         <div 
-          className="absolute bottom-0 left-0 right-0 h-2 bg-amber-700"
+          className="absolute bottom-0 left-0 right-0 h-2"
+          style={{
+            background: 'linear-gradient(90deg, hsl(320 100% 50%), hsl(280 100% 50%), hsl(180 100% 50%))',
+            boxShadow: '0 0 20px hsl(320 100% 50% / 0.5)',
+          }}
         />
 
         {/* Game Over Overlay */}
         {gameOver && (
-          <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center">
-            <p className="text-2xl font-bold text-foreground mb-2">Game Over!</p>
-            <p className="text-muted-foreground mb-4">Final Score: {score}</p>
-            <Button onClick={resetGame}>Play Again</Button>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 flex flex-col items-center justify-center"
+            style={{ background: 'hsl(240 15% 3% / 0.9)' }}
+          >
+            <p className="text-2xl font-cyber font-bold neon-text-pink mb-2">CRASHED</p>
+            <p className="text-muted-foreground font-mono mb-4">SCORE: {score}</p>
+            <Button onClick={resetGame} className="cyber-button font-mono neon-border-purple">
+              {'>'} REBOOT
+            </Button>
+          </motion.div>
         )}
 
         {/* Start Overlay */}
         {!isPlaying && !gameOver && (
-          <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center">
-            <p className="text-xl font-semibold text-foreground mb-2">Flappy Bird</p>
-            <p className="text-sm text-muted-foreground mb-4">Tap or press Space to fly!</p>
-            <Button onClick={resetGame}>Start Game</Button>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 flex flex-col items-center justify-center"
+            style={{ background: 'hsl(240 15% 3% / 0.9)' }}
+          >
+            <p className="text-xl font-cyber font-semibold neon-text-purple mb-2">FLAPPY_2077</p>
+            <p className="text-xs text-muted-foreground font-mono mb-4">{'>'} TAP_OR_SPACE_TO_FLY</p>
+            <Button onClick={resetGame} className="cyber-button font-mono neon-border-purple">
+              {'>'} LAUNCH
+            </Button>
+          </motion.div>
         )}
       </div>
 
-      <p className="text-sm text-muted-foreground mt-4">
-        Tap or press Space to fly
+      <p className="text-xs text-muted-foreground mt-4 font-mono">
+        {'>'} TAP_OR_PRESS_SPACE
       </p>
     </div>
   );

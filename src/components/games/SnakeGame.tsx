@@ -128,63 +128,111 @@ const SnakeGame = () => {
 
   return (
     <div className="flex flex-col items-center">
+      {/* Score and controls */}
       <div className="mb-4 flex items-center gap-4">
-        <span className="text-xl font-semibold text-foreground">Score: {score}</span>
-        <Button variant="outline" size="sm" onClick={resetGame} className="gap-1">
-          <RotateCcw className="h-4 w-4" />
-          Restart
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Score:</span>
+          <span className="text-xl font-cyber font-bold neon-text-cyan">{score}</span>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={resetGame} 
+          className="gap-1 cyber-button text-xs font-mono"
+        >
+          <RotateCcw className="h-3 w-3" />
+          RESTART
         </Button>
       </div>
 
+      {/* Game board */}
       <div
-        className="relative border-2 border-border rounded-lg bg-card overflow-hidden"
+        className="relative rounded-lg overflow-hidden neon-border"
         style={{
           width: GRID_SIZE * CELL_SIZE,
           height: GRID_SIZE * CELL_SIZE,
+          background: 'linear-gradient(135deg, hsl(240 20% 5%), hsl(240 15% 8%))',
+          boxShadow: '0 0 30px hsl(180 100% 50% / 0.2), inset 0 0 20px hsl(180 100% 50% / 0.05)',
         }}
       >
+        {/* Grid lines */}
+        <div 
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `
+              linear-gradient(hsl(180 100% 50% / 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, hsl(180 100% 50% / 0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`,
+          }}
+        />
+
         {/* Food */}
         <motion.div
-          className="absolute bg-destructive rounded-full"
+          className="absolute rounded-full"
           style={{
             width: CELL_SIZE - 4,
             height: CELL_SIZE - 4,
             left: food.x * CELL_SIZE + 2,
             top: food.y * CELL_SIZE + 2,
+            background: 'hsl(320 100% 60%)',
+            boxShadow: '0 0 10px hsl(320 100% 60%), 0 0 20px hsl(320 100% 60% / 0.5)',
           }}
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ repeat: Infinity, duration: 0.5 }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.8, 1, 0.8] }}
+          transition={{ repeat: Infinity, duration: 0.8 }}
         />
 
         {/* Snake */}
         {snake.map((segment, index) => (
-          <div
+          <motion.div
             key={index}
-            className={`absolute rounded-sm ${index === 0 ? 'bg-primary' : 'bg-primary/70'}`}
+            className="absolute rounded-sm"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
             style={{
               width: CELL_SIZE - 2,
               height: CELL_SIZE - 2,
               left: segment.x * CELL_SIZE + 1,
               top: segment.y * CELL_SIZE + 1,
+              background: index === 0 
+                ? 'linear-gradient(135deg, hsl(180 100% 50%), hsl(180 100% 40%))'
+                : `linear-gradient(135deg, hsl(180 100% ${50 - index * 2}%), hsl(180 100% ${40 - index * 2}%))`,
+              boxShadow: index === 0 
+                ? '0 0 10px hsl(180 100% 50%), 0 0 20px hsl(180 100% 50% / 0.3)'
+                : '0 0 5px hsl(180 100% 50% / 0.3)',
             }}
           />
         ))}
 
         {/* Game Over Overlay */}
         {gameOver && (
-          <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center">
-            <p className="text-2xl font-bold text-foreground mb-2">Game Over!</p>
-            <p className="text-muted-foreground mb-4">Final Score: {score}</p>
-            <Button onClick={resetGame}>Play Again</Button>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 flex flex-col items-center justify-center"
+            style={{ background: 'hsl(240 15% 3% / 0.9)' }}
+          >
+            <p className="text-2xl font-cyber font-bold neon-text-pink mb-2">GAME_OVER</p>
+            <p className="text-muted-foreground font-mono mb-4">SCORE: {score}</p>
+            <Button onClick={resetGame} className="cyber-button font-mono">
+              {'>'} RETRY
+            </Button>
+          </motion.div>
         )}
 
         {/* Start Overlay */}
         {!isPlaying && !gameOver && (
-          <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center">
-            <p className="text-xl font-semibold text-foreground mb-4">Ready to Play?</p>
-            <Button onClick={resetGame}>Start Game</Button>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 flex flex-col items-center justify-center"
+            style={{ background: 'hsl(240 15% 3% / 0.9)' }}
+          >
+            <p className="text-xl font-cyber font-semibold neon-text-cyan mb-4">SNAKE_2077</p>
+            <Button onClick={resetGame} className="cyber-button font-mono">
+              {'>'} INITIALIZE
+            </Button>
+          </motion.div>
         )}
       </div>
 
@@ -195,7 +243,7 @@ const SnakeGame = () => {
           variant="outline"
           size="icon"
           onClick={() => handleMobileControl('UP')}
-          className="h-12 w-12"
+          className="h-12 w-12 cyber-button font-bold"
         >
           ↑
         </Button>
@@ -204,7 +252,7 @@ const SnakeGame = () => {
           variant="outline"
           size="icon"
           onClick={() => handleMobileControl('LEFT')}
-          className="h-12 w-12"
+          className="h-12 w-12 cyber-button font-bold"
         >
           ←
         </Button>
@@ -212,7 +260,7 @@ const SnakeGame = () => {
           variant="outline"
           size="icon"
           onClick={() => handleMobileControl('DOWN')}
-          className="h-12 w-12"
+          className="h-12 w-12 cyber-button font-bold"
         >
           ↓
         </Button>
@@ -220,14 +268,14 @@ const SnakeGame = () => {
           variant="outline"
           size="icon"
           onClick={() => handleMobileControl('RIGHT')}
-          className="h-12 w-12"
+          className="h-12 w-12 cyber-button font-bold"
         >
           →
         </Button>
       </div>
 
-      <p className="text-sm text-muted-foreground mt-4 hidden md:block">
-        Use arrow keys to control the snake
+      <p className="text-xs text-muted-foreground mt-4 hidden md:block font-mono">
+        {'>'} USE_ARROW_KEYS_TO_NAVIGATE
       </p>
     </div>
   );
