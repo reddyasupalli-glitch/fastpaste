@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Send, Code, Type, RotateCcw, X, Paperclip, Loader2 } from 'lucide-react';
+import { Send, Code, Type, RotateCcw, X, Paperclip, Loader2, Terminal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
@@ -8,6 +8,7 @@ import { AnimatePresence } from 'framer-motion';
 import { AsuMentionSuggestion } from './AsuMentionSuggestion';
 import { PassiveAsuSuggestion } from './PassiveAsuSuggestion';
 import { QuotedMessage } from './QuotedMessage';
+import { cn } from '@/lib/utils';
 
 interface FailedMessage {
   content: string;
@@ -315,7 +316,7 @@ export function MessageInput({ onSend, onSendFile, onTypingChange, quotedMessage
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-border bg-card/90 backdrop-blur-sm p-2 sm:p-3 md:p-4 relative">
+    <form onSubmit={handleSubmit} className="border-t border-neon-cyan/20 bg-card/90 backdrop-blur-md p-2 sm:p-3 md:p-4 relative">
       <div className="mx-auto w-full max-w-4xl relative">
         {/* @asu Mention Suggestion */}
         <AsuMentionSuggestion 
@@ -341,18 +342,18 @@ export function MessageInput({ onSend, onSendFile, onTypingChange, quotedMessage
         </AnimatePresence>
 
         {failedMessage && (
-          <div className="mb-2 sm:mb-3 flex items-center gap-2 rounded-md bg-destructive/10 p-2 text-sm text-destructive">
-            <span className="flex-1 text-xs sm:text-sm">Message failed to send</span>
+          <div className="mb-2 sm:mb-3 flex items-center gap-2 rounded-md bg-destructive/10 border border-destructive/30 p-2 text-sm text-destructive">
+            <span className="flex-1 text-xs sm:text-sm font-mono">{'>'} SEND_FAILED</span>
             <Button
               type="button"
               size="sm"
               variant="outline"
               onClick={handleRetry}
               disabled={sending}
-              className="h-7 gap-1 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              className="h-7 gap-1 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground font-mono"
             >
               <RotateCcw className="h-3 w-3" />
-              <span className="hidden sm:inline">Retry</span>
+              <span className="hidden sm:inline">RETRY</span>
             </Button>
             <Button
               type="button"
@@ -371,7 +372,12 @@ export function MessageInput({ onSend, onSendFile, onTypingChange, quotedMessage
               pressed={isCodeMode}
               onPressedChange={setIsCodeMode}
               aria-label="Toggle code mode"
-              className="h-9 w-9 sm:h-10 sm:w-10 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              className={cn(
+                "h-9 w-9 sm:h-10 sm:w-10 border",
+                isCodeMode 
+                  ? "bg-neon-purple/20 text-neon-purple border-neon-purple/50 data-[state=on]:bg-neon-purple/30" 
+                  : "border-border hover:border-neon-cyan/50 hover:bg-neon-cyan/10"
+              )}
             >
               {isCodeMode ? <Code className="h-4 w-4" /> : <Type className="h-4 w-4" />}
             </Toggle>
@@ -389,39 +395,55 @@ export function MessageInput({ onSend, onSendFile, onTypingChange, quotedMessage
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingFile}
               title="Attach file"
-              className="h-9 w-9 sm:h-10 sm:w-10"
+              className="h-9 w-9 sm:h-10 sm:w-10 border-border hover:border-neon-cyan/50 hover:bg-neon-cyan/10"
             >
               {uploadingFile ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin text-neon-cyan" />
               ) : (
                 <Paperclip className="h-4 w-4" />
               )}
             </Button>
           </div>
-          <Textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => handleContentChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            placeholder={isCodeMode ? 'Paste your code here...' : 'Type @ to mention ASU...'}
-            className={`min-h-[40px] sm:min-h-[44px] flex-1 resize-none text-sm sm:text-base ${isCodeMode ? 'font-mono' : ''}`}
-            rows={isCodeMode ? 4 : 1}
-          />
+          <div className="flex-1 relative">
+            <Terminal className="absolute left-3 top-3 h-4 w-4 text-neon-cyan/30 pointer-events-none" />
+            <Textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => handleContentChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              placeholder={isCodeMode ? '// Paste your code here...' : '> Type @ to mention ASU...'}
+              className={cn(
+                "min-h-[40px] sm:min-h-[44px] w-full resize-none text-sm sm:text-base pl-10",
+                "cyber-input",
+                isCodeMode && 'font-mono'
+              )}
+              rows={isCodeMode ? 4 : 1}
+            />
+          </div>
           <Button 
             type="submit" 
             size="icon" 
             disabled={!content.trim() || sending}
-            className="h-9 w-9 sm:h-10 sm:w-10"
+            className={cn(
+              "h-9 w-9 sm:h-10 sm:w-10",
+              "bg-neon-cyan/20 border border-neon-cyan text-neon-cyan",
+              "hover:bg-neon-cyan hover:text-primary-foreground",
+              "disabled:opacity-50 disabled:border-muted"
+            )}
           >
-            <Send className="h-4 w-4" />
+            {sending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
-        <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-muted-foreground text-center sm:text-left">
+        <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-muted-foreground text-center sm:text-left font-mono">
           {isCodeMode 
-            ? 'Code mode: Your message will be formatted as a code block' 
-            : 'Type @ for AI · Swipe message to reply'}
+            ? '// CODE_MODE: Message formatted as code block' 
+            : '> Type @ for AI · Swipe message to reply'}
         </p>
       </div>
     </form>

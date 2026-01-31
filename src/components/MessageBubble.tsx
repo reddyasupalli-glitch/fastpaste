@@ -1,4 +1,4 @@
-import { Copy, Check, CheckCheck, Download, FileText, Image as ImageIcon, Bot } from 'lucide-react';
+import { Copy, Check, CheckCheck, Download, FileText, Image as ImageIcon, Bot, Terminal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useCallback } from 'react';
 import { Highlight, themes } from 'prism-react-renderer';
@@ -92,23 +92,23 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
     // Show single check if sent, double check with blue if seen
     if (seenBy.length === 0) {
       return (
-        <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] sm:text-xs text-muted-foreground">
+        <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] sm:text-xs text-muted-foreground font-mono">
           <Check className="h-3 w-3" />
-          <span>Sent</span>
+          <span>SENT</span>
         </div>
       );
     }
     
     const seenText = seenBy.length === 1 
-      ? `Seen by ${seenBy[0]}`
+      ? `${seenBy[0]}`
       : seenBy.length === 2
-        ? `Seen by ${seenBy[0]} and ${seenBy[1]}`
-        : `Seen by ${seenBy[0]} and ${seenBy.length - 1} others`;
+        ? `${seenBy[0]}, ${seenBy[1]}`
+        : `${seenBy[0]} +${seenBy.length - 1}`;
     
     return (
-      <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] sm:text-xs text-muted-foreground">
-        <CheckCheck className="h-3 w-3 text-primary" />
-        <span>{seenText}</span>
+      <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] sm:text-xs text-muted-foreground font-mono">
+        <CheckCheck className="h-3 w-3 text-neon-cyan" />
+        <span>SEEN: {seenText}</span>
       </div>
     );
   };
@@ -118,30 +118,38 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
     
     if (isAI) {
       return (
-        <div className="flex-shrink-0 h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg ring-2 ring-primary/20">
+        <div className={cn(
+          "flex-shrink-0 h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 rounded-full flex items-center justify-center",
+          "bg-gradient-to-br from-neon-cyan to-neon-purple",
+          "shadow-[0_0_15px_hsl(var(--neon-cyan)/0.5)] ring-2 ring-neon-cyan/30"
+        )}>
           <Bot className="h-3 w-3 sm:h-4 sm:w-4 lg:h-6 lg:w-6 text-primary-foreground" />
         </div>
       );
     }
     
     return (
-      <div className="flex-shrink-0 h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 rounded-full bg-secondary flex items-center justify-center text-[10px] sm:text-sm lg:text-base font-medium text-muted-foreground">
+      <div className={cn(
+        "flex-shrink-0 h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 rounded-full flex items-center justify-center",
+        "bg-neon-purple/20 border border-neon-purple/30",
+        "text-[10px] sm:text-sm lg:text-base font-mono font-medium text-neon-purple"
+      )}>
         {message.username.charAt(0).toUpperCase()}
       </div>
     );
   };
 
   const renderUsername = () => {
-    if (isOwn) return 'You';
+    if (isOwn) return <span className="text-neon-cyan font-mono">YOU</span>;
     if (isAI) {
       return (
         <span className="flex items-center gap-1">
-          <span className="text-primary font-semibold">{AI_NAME}</span>
-          <span className="text-[8px] sm:text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-medium">AI</span>
+          <span className="text-neon-cyan font-cyber font-semibold">{AI_NAME}</span>
+          <span className="text-[8px] sm:text-[10px] bg-neon-cyan/20 text-neon-cyan px-1.5 py-0.5 rounded-full font-mono border border-neon-cyan/30">AI</span>
         </span>
       );
     }
-    return message.username;
+    return <span className="font-mono">{message.username}</span>;
   };
 
   // File message
@@ -151,19 +159,19 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
         {renderAvatar()}
         <div className="flex-1 min-w-0">
           <div className="mb-0.5 sm:mb-1">
-            <span className={cn("text-[9px] sm:text-[10px] lg:text-xs font-medium", isOwn ? 'text-primary' : 'text-muted-foreground')}>
+            <span className={cn("text-[9px] sm:text-[10px] lg:text-xs font-medium", isOwn ? 'text-neon-cyan' : 'text-muted-foreground')}>
               {renderUsername()}
             </span>
           </div>
           <div className={cn(
-            "rounded-lg overflow-hidden",
-            isOwn ? "bg-primary/10" : isAI ? "bg-primary/5 border border-primary/20" : "bg-secondary"
+            "rounded-lg overflow-hidden border",
+            isOwn ? "bg-neon-cyan/10 border-neon-cyan/30" : isAI ? "bg-neon-cyan/5 border-neon-cyan/20" : "bg-muted/50 border-border"
           )}>
             {isImage ? (
               <div className="relative">
                 {!imageLoaded && (
-                  <div className="flex h-24 sm:h-32 lg:h-48 items-center justify-center bg-muted">
-                    <ImageIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 animate-pulse text-muted-foreground" />
+                  <div className="flex h-24 sm:h-32 lg:h-48 items-center justify-center bg-muted/50">
+                    <ImageIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 animate-pulse text-neon-cyan/50" />
                   </div>
                 )}
                 <img
@@ -179,19 +187,19 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
               </div>
             ) : (
               <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 p-1.5 sm:p-2 lg:p-3">
-                <div className="flex h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 items-center justify-center rounded-lg bg-primary/20">
-                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-primary" />
+                <div className="flex h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 items-center justify-center rounded-lg bg-neon-purple/20 border border-neon-purple/30">
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-neon-purple" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="truncate font-medium text-[10px] sm:text-xs lg:text-sm">{message.file_name}</p>
-                  <p className="text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground">{message.file_type}</p>
+                  <p className="truncate font-mono font-medium text-[10px] sm:text-xs lg:text-sm">{message.file_name}</p>
+                  <p className="text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground font-mono">{message.file_type}</p>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => window.open(message.file_url!, '_blank')}
                   title="Download file"
-                  className="h-6 w-6 sm:h-8 sm:w-8 lg:h-9 lg:w-9"
+                  className="h-6 w-6 sm:h-8 sm:w-8 lg:h-9 lg:w-9 hover:bg-neon-cyan/10 hover:text-neon-cyan"
                 >
                   <Download className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
                 </Button>
@@ -199,7 +207,7 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
             )}
           </div>
           <div className="mt-0.5 sm:mt-1 flex items-center justify-between">
-            <time className="text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground">
+            <time className="text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground font-mono">
               {new Date(message.created_at).toLocaleTimeString()}
             </time>
           </div>
@@ -219,31 +227,34 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
         {renderAvatar()}
         <div className="flex-1 min-w-0">
           <div className="mb-0.5 sm:mb-1 flex items-center gap-2">
-            <span className={cn("text-[9px] sm:text-[10px] lg:text-xs font-medium", isOwn ? 'text-primary' : 'text-muted-foreground')}>
+            <span className={cn("text-[9px] sm:text-[10px] lg:text-xs font-medium", isOwn ? 'text-neon-cyan' : 'text-muted-foreground')}>
               {renderUsername()}
             </span>
           </div>
           <div className={cn(
             "overflow-hidden rounded-lg border",
-            isAI ? "border-primary/30" : "border-border"
+            isAI ? "border-neon-cyan/30" : isOwn ? "border-neon-purple/30" : "border-border"
           )}>
-            <div className="flex items-center justify-between border-b border-border bg-secondary/50 px-1.5 sm:px-2 lg:px-3 py-0.5 sm:py-1 lg:py-1.5">
-              <span className="text-[9px] sm:text-[10px] lg:text-xs font-medium text-muted-foreground">Code</span>
+            <div className="flex items-center justify-between border-b border-border bg-muted/50 px-1.5 sm:px-2 lg:px-3 py-0.5 sm:py-1 lg:py-1.5">
+              <span className="text-[9px] sm:text-[10px] lg:text-xs font-mono font-medium text-neon-purple flex items-center gap-1">
+                <Terminal className="h-3 w-3" />
+                CODE
+              </span>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={copyCode}
-                className="h-5 sm:h-6 lg:h-7 gap-0.5 sm:gap-1 lg:gap-1.5 text-[9px] sm:text-[10px] lg:text-xs px-1 sm:px-1.5 lg:px-2"
+                className="h-5 sm:h-6 lg:h-7 gap-0.5 sm:gap-1 lg:gap-1.5 text-[9px] sm:text-[10px] lg:text-xs px-1 sm:px-1.5 lg:px-2 hover:bg-neon-cyan/10 hover:text-neon-cyan font-mono"
               >
                 {copied ? (
                   <>
-                    <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                    <span className="hidden sm:inline">Copied</span>
+                    <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-neon-green" />
+                    <span className="hidden sm:inline">COPIED</span>
                   </>
                 ) : (
                   <>
                     <Copy className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                    <span className="hidden sm:inline">Copy</span>
+                    <span className="hidden sm:inline">COPY</span>
                   </>
                 )}
               </Button>
@@ -256,11 +267,11 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
               {({ style, tokens, getLineProps, getTokenProps }) => (
                 <pre 
                   className="overflow-x-auto p-1.5 sm:p-3 lg:p-5 text-[10px] sm:text-xs lg:text-base"
-                  style={{ ...style, margin: 0, borderRadius: 0 }}
+                  style={{ ...style, margin: 0, borderRadius: 0, background: 'hsl(240 20% 5%)' }}
                 >
                   {tokens.map((line, i) => (
                     <div key={i} {...getLineProps({ line })}>
-                      <span className="mr-1.5 sm:mr-3 lg:mr-6 inline-block w-3 sm:w-5 lg:w-8 select-none text-right text-muted-foreground/50 text-[9px] sm:text-xs lg:text-base">
+                      <span className="mr-1.5 sm:mr-3 lg:mr-6 inline-block w-3 sm:w-5 lg:w-8 select-none text-right text-neon-cyan/30 text-[9px] sm:text-xs lg:text-base font-mono">
                         {i + 1}
                       </span>
                       {line.map((token, key) => (
@@ -273,7 +284,7 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
             </Highlight>
           </div>
           <div className="mt-0.5 sm:mt-1 flex items-center justify-between">
-            <time className="text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground">
+            <time className="text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground font-mono">
               {new Date(message.created_at).toLocaleTimeString()}
             </time>
           </div>
@@ -296,7 +307,7 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
       {renderAvatar()}
       <div className="flex-1 min-w-0">
         <div className="mb-0.5 sm:mb-1">
-          <span className={cn("text-[9px] sm:text-[10px] lg:text-xs font-medium", isOwn ? 'text-primary' : 'text-muted-foreground')}>
+          <span className={cn("text-[9px] sm:text-[10px] lg:text-xs font-medium", isOwn ? 'text-neon-cyan' : 'text-muted-foreground')}>
             {renderUsername()}
           </span>
         </div>
@@ -307,28 +318,29 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
               <div key={index} className="space-y-1">
                 <div className={cn(
                   "overflow-hidden rounded-lg border",
-                  isAI ? "border-primary/30" : "border-border"
+                  isAI ? "border-neon-cyan/30" : "border-border"
                 )}>
-                  <div className="flex items-center justify-between border-b border-border bg-secondary/80 px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2">
-                    <span className="text-[10px] sm:text-xs lg:text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                      {part.language || 'Code'}
+                  <div className="flex items-center justify-between border-b border-border bg-muted/80 px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2">
+                    <span className="text-[10px] sm:text-xs lg:text-sm font-mono font-semibold text-neon-purple uppercase tracking-wide flex items-center gap-1">
+                      <Terminal className="h-3 w-3" />
+                      {part.language || 'CODE'}
                     </span>
                     <div className="flex items-center gap-1 sm:gap-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => copyCodeBlock(part.content, index)}
-                        className="h-6 sm:h-7 lg:h-8 gap-1 sm:gap-1.5 text-[10px] sm:text-xs lg:text-sm px-2 sm:px-3 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
+                        className="h-6 sm:h-7 lg:h-8 gap-1 sm:gap-1.5 text-[10px] sm:text-xs lg:text-sm px-2 sm:px-3 bg-neon-cyan/10 border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/20 font-mono"
                       >
                         {copiedIndex === index ? (
                           <>
-                            <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            <span>Copied!</span>
+                            <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-neon-green" />
+                            <span>COPIED</span>
                           </>
                         ) : (
                           <>
                             <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            <span>Copy</span>
+                            <span>COPY</span>
                           </>
                         )}
                       </Button>
@@ -342,11 +354,11 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
                     {({ style, tokens, getLineProps, getTokenProps }) => (
                       <pre 
                         className="overflow-x-auto p-1.5 sm:p-3 lg:p-5 text-[10px] sm:text-xs lg:text-sm"
-                        style={{ ...style, margin: 0, borderRadius: 0 }}
+                        style={{ ...style, margin: 0, borderRadius: 0, background: 'hsl(240 20% 5%)' }}
                       >
                         {tokens.map((line, i) => (
                           <div key={i} {...getLineProps({ line })}>
-                            <span className="mr-1.5 sm:mr-3 lg:mr-6 inline-block w-3 sm:w-5 lg:w-8 select-none text-right text-muted-foreground/50 text-[9px] sm:text-xs lg:text-sm">
+                            <span className="mr-1.5 sm:mr-3 lg:mr-6 inline-block w-3 sm:w-5 lg:w-8 select-none text-right text-neon-cyan/30 text-[9px] sm:text-xs lg:text-sm font-mono">
                               {i + 1}
                             </span>
                             {line.map((token, key) => (
@@ -361,12 +373,12 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
               </div>
             ) : (
               <div key={index} className={cn(
-                "rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 lg:px-5 lg:py-3",
+                "rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 lg:px-5 lg:py-3 border",
                 isOwn 
-                  ? "bg-primary text-primary-foreground" 
+                  ? "bg-neon-cyan/20 border-neon-cyan/30 text-foreground" 
                   : isAI 
-                    ? "bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20" 
-                    : "bg-secondary"
+                    ? "bg-gradient-to-br from-neon-cyan/10 to-neon-purple/5 border-neon-cyan/20" 
+                    : "bg-muted/50 border-border"
               )}>
                 <p className="whitespace-pre-wrap break-words text-xs sm:text-sm lg:text-[17px] lg:leading-relaxed">{part.content}</p>
               </div>
@@ -375,7 +387,7 @@ export function MessageBubble({ message, isOwn, seenBy = [], reactions = [], onT
         </div>
         
         <div className="mt-0.5 sm:mt-1">
-          <time className="text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground">
+          <time className="text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground font-mono">
             {new Date(message.created_at).toLocaleTimeString()}
           </time>
         </div>
