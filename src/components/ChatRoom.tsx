@@ -16,6 +16,7 @@ import { useReactions } from '@/hooks/useReactions';
 import { useSwipeToReply } from '@/hooks/useSwipeToReply';
 import { useRoomSession } from '@/hooks/useRoomSession';
 import { cn } from '@/lib/utils';
+import { Loader2, Terminal } from 'lucide-react';
 
 interface ChatRoomProps {
   groupId: string;
@@ -99,10 +100,32 @@ export function ChatRoom({ groupId, groupCode, roomType, creatorUsername, onLeav
   // Show loading while session is being created
   if (!sessionActive) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Joining room...</p>
+      <div className="flex h-screen items-center justify-center bg-background relative overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 opacity-30" style={{
+            backgroundImage: `
+              linear-gradient(hsl(var(--neon-cyan) / 0.03) 1px, transparent 1px),
+              linear-gradient(90deg, hsl(var(--neon-cyan) / 0.03) 1px, transparent 1px)
+            `,
+            backgroundSize: '50px 50px'
+          }} />
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-neon-cyan/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-neon-purple/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+        
+        <div className="flex flex-col items-center gap-4 glass-panel p-8 relative z-10">
+          <div className="relative">
+            <Loader2 className="h-10 w-10 animate-spin text-neon-cyan" />
+            <div className="absolute inset-0 h-10 w-10 animate-ping rounded-full bg-neon-cyan/20" />
+          </div>
+          <div className="text-center">
+            <p className="font-cyber text-lg text-neon-cyan mb-1">CONNECTING</p>
+            <p className="text-sm text-muted-foreground font-mono flex items-center gap-2">
+              <Terminal className="h-3 w-3" />
+              Joining room {groupCode}...
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -118,51 +141,60 @@ export function ChatRoom({ groupId, groupCode, roomType, creatorUsername, onLeav
       <KickedDialog open={showKickedDialog} onClose={handleKickedClose} />
       <div 
         className={cn(
-          "flex h-screen flex-col w-full",
+          "flex h-screen flex-col w-full relative",
           !currentBackground.isCustom && currentBackground.style
         )}
         style={backgroundStyle}
       >
-      {/* Centered container for desktop */}
-      <div className="flex flex-col h-full w-full max-w-full md:max-w-[90%] lg:max-w-[1400px] mx-auto px-0 md:px-6 lg:px-8">
-        <GroupHeader 
-          code={groupCode} 
-          roomType={roomType}
-          onLeave={handleLeave} 
-          onlineCount={onlineCount}
-          onlineUsers={onlineUsers}
-          username={username}
-          onUsernameChange={setUsername}
-          backgroundId={backgroundId}
-          backgroundOptions={backgroundOptions}
-          onBackgroundChange={setBackground}
-          onAddCustomBackground={addCustomBackground}
-          onRemoveCustomBackground={removeCustomBackground}
-          creatorUsername={creatorUsername}
-          onKickUser={isCreator ? handleKickUser : undefined}
-        />
-        <RoomExpiryNotification groupId={groupId} groupCode={groupCode} />
-        <MessageList 
-          messages={messages} 
-          loading={loading} 
-          currentUsername={username}
-          onMessageSeen={markMessageSeen}
-          getSeenBy={handleGetSeenBy}
-          getReactionsForMessage={getReactionsForMessage}
-          onToggleReaction={handleToggleReaction}
-          onSwipeReply={handleSwipeReply}
-          onDeleteMessage={handleDeleteMessage}
-        />
-        <TypingIndicator typingUsers={typingUsers} isAIThinking={isAIThinking} />
-        <MessageInput 
-          onSend={sendMessage} 
-          onSendFile={sendFileMessage}
-          onTypingChange={setTyping}
-          quotedMessage={quotedMessage}
-          onDismissQuote={dismissQuote}
-        />
+        {/* Subtle grid overlay */}
+        <div className="absolute inset-0 pointer-events-none opacity-20" style={{
+          backgroundImage: `
+            linear-gradient(hsl(var(--neon-cyan) / 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(var(--neon-cyan) / 0.02) 1px, transparent 1px)
+          `,
+          backgroundSize: '30px 30px'
+        }} />
+        
+        {/* Centered container for desktop */}
+        <div className="flex flex-col h-full w-full max-w-full md:max-w-[90%] lg:max-w-[1400px] mx-auto px-0 md:px-6 lg:px-8 relative z-10">
+          <GroupHeader 
+            code={groupCode} 
+            roomType={roomType}
+            onLeave={handleLeave} 
+            onlineCount={onlineCount}
+            onlineUsers={onlineUsers}
+            username={username}
+            onUsernameChange={setUsername}
+            backgroundId={backgroundId}
+            backgroundOptions={backgroundOptions}
+            onBackgroundChange={setBackground}
+            onAddCustomBackground={addCustomBackground}
+            onRemoveCustomBackground={removeCustomBackground}
+            creatorUsername={creatorUsername}
+            onKickUser={isCreator ? handleKickUser : undefined}
+          />
+          <RoomExpiryNotification groupId={groupId} groupCode={groupCode} />
+          <MessageList 
+            messages={messages} 
+            loading={loading} 
+            currentUsername={username}
+            onMessageSeen={markMessageSeen}
+            getSeenBy={handleGetSeenBy}
+            getReactionsForMessage={getReactionsForMessage}
+            onToggleReaction={handleToggleReaction}
+            onSwipeReply={handleSwipeReply}
+            onDeleteMessage={handleDeleteMessage}
+          />
+          <TypingIndicator typingUsers={typingUsers} isAIThinking={isAIThinking} />
+          <MessageInput 
+            onSend={sendMessage} 
+            onSendFile={sendFileMessage}
+            onTypingChange={setTyping}
+            quotedMessage={quotedMessage}
+            onDismissQuote={dismissQuote}
+          />
+        </div>
       </div>
-    </div>
     </>
   );
 }
