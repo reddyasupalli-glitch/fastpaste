@@ -1,55 +1,57 @@
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import MaintenancePage from "@/components/MaintenancePage";
 
-// Set this to false to disable maintenance mode
-const MAINTENANCE_MODE = true;
+// Pages
+import Landing from "./pages/Landing";
+import Chat from "./pages/Chat";
+import Paste from "./pages/Paste";
+import PasteView from "./pages/PasteView";
+import CodingRooms from "./pages/CodingRooms";
+import CodingRoom from "./pages/CodingRoom";
+import Explore from "./pages/Explore";
+import About from "./pages/About";
+import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import Contact from "./pages/Contact";
+
+const queryClient = new QueryClient();
 
 const App = () => {
-  if (MAINTENANCE_MODE) {
-    return (
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <MaintenancePage />
-      </ThemeProvider>
-    );
-  }
-
-  // Normal app - imports are dynamic to avoid loading when in maintenance
-  return <NormalApp />;
-};
-
-// Lazy load normal app components only when not in maintenance mode
-const NormalApp = () => {
-  const { Toaster } = require("@/components/ui/toaster");
-  const { Toaster: Sonner } = require("@/components/ui/sonner");
-  const { TooltipProvider } = require("@/components/ui/tooltip");
-  const { QueryClient, QueryClientProvider } = require("@tanstack/react-query");
-  const { BrowserRouter, Routes, Route } = require("react-router-dom");
-  const Index = require("./pages/Index").default;
-  const About = require("./pages/About").default;
-  const NotFound = require("./pages/NotFound").default;
-  const PrivacyPolicy = require("./pages/PrivacyPolicy").default;
-  const TermsOfService = require("./pages/TermsOfService").default;
-  const Contact = require("./pages/Contact").default;
-  const Blog = require("./pages/Blog").default;
-  const BlogPost = require("./pages/BlogPost").default;
-
-  const queryClient = new QueryClient();
-
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
         <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
+              {/* Main Routes */}
+              <Route path="/" element={<Landing />} />
+              <Route path="/chat" element={<Chat />} />
+              
+              {/* Paste System */}
+              <Route path="/paste" element={<Paste />} />
+              <Route path="/paste/:pasteId" element={<PasteView />} />
+              
+              {/* Coding Rooms */}
+              <Route path="/rooms" element={<CodingRooms />} />
+              <Route path="/room/:roomCode" element={<CodingRoom />} />
+              
+              {/* Explore & Discovery */}
+              <Route path="/explore" element={<Explore />} />
+              
+              {/* Info Pages */}
               <Route path="/about" element={<About />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/contact" element={<Contact />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:postId" element={<BlogPost />} />
+              
+              {/* 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
