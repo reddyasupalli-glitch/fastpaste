@@ -1,17 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Users, Copy, Check, Terminal, ArrowLeft, Send, 
-  MessageSquare, Code2, Settings, User
+  MessageSquare, User, Wifi, WifiOff
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getSessionToken } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface RoomData {
   id: string;
@@ -23,9 +24,9 @@ interface RoomData {
 }
 
 interface Participant {
-  id: string;
   username: string;
-  last_seen_at: string;
+  isTyping?: boolean;
+  lastActivity?: string;
 }
 
 interface ChatMessage {
@@ -35,19 +36,8 @@ interface ChatMessage {
   created_at: string;
 }
 
-// Get session token
-const getSessionToken = (): string => {
-  let token = localStorage.getItem('fp-session-token');
-  if (!token) {
-    token = crypto.randomUUID();
-    localStorage.setItem('fp-session-token', token);
-  }
-  return token;
-};
-
 const CodingRoom = () => {
   const { roomCode } = useParams<{ roomCode: string }>();
-  const navigate = useNavigate();
   
   const [room, setRoom] = useState<RoomData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,14 +45,18 @@ const CodingRoom = () => {
   const [content, setContent] = useState('');
   const [username, setUsername] = useState('');
   const [showUsernamePrompt, setShowUsernamePrompt] = useState(true);
-  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [participants, setParticipants] = useState<Map<string, Participant>>(new Map());
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [copied, setCopied] = useState(false);
   const [showChat, setShowChat] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastBroadcastContent = useRef('');
 
   // Fetch room data
   useEffect(() => {
@@ -84,6 +78,7 @@ const CodingRoom = () => {
 
         setRoom(data);
         setContent(data.content || '');
+        lastBroadcastContent.current = data.content || '';
       } catch (err: any) {
         setError(err.message || 'Failed to load room');
       } finally {
@@ -96,96 +91,140 @@ const CodingRoom = () => {
 
   // Join room and set up real-time subscriptions
   useEffect(() => {
-    if (!room || showUsernamePrompt) return;
+    if (!room || showUsernamePrompt || !username) return;
 
-    const sessionToken = getSessionToken();
+    const sessionKey = `${getSessionToken()}-${Date.now()}`;
 
-    // Join as participant
-    const joinRoom = async () => {
-      await supabase
-        .from('coding_room_participants')
-        .upsert({
-          room_id: room.id,
-          session_token: sessionToken,
-          username,
-          last_seen_at: new Date().toISOString(),
-        }, {
-          onConflict: 'room_id,session_token',
+    // Create a unique channel for this room
+    const channel = supabase.channel(`room-collab-${room.id}`, {
+      config: {
+        presence: { key: sessionKey },
+        broadcast: { self: true },
+      },
+    });
+
+    channelRef.current = channel;
+
+    // Handle presence sync
+    channel.on('presence', { event: 'sync' }, () => {
+      const state = channel.presenceState<Participant>();
+      const newParticipants = new Map<string, Participant>();
+      
+      Object.values(state).forEach((presences) => {
+        presences.forEach((presence: any) => {
+          if (presence.username) {
+            newParticipants.set(presence.username, {
+              username: presence.username,
+              isTyping: presence.isTyping,
+              lastActivity: presence.lastActivity,
+            });
+          }
         });
-    };
+      });
+      
+      setParticipants(newParticipants);
+    });
 
-    joinRoom();
+    // Handle real-time code updates via broadcast (instant, no database latency)
+    channel.on('broadcast', { event: 'code-update' }, ({ payload }) => {
+      if (payload.sender !== username && payload.content !== undefined) {
+        // Only update if it's from another user
+        setContent(payload.content);
+        lastBroadcastContent.current = payload.content;
+        setIsSyncing(true);
+        setTimeout(() => setIsSyncing(false), 500);
+      }
+    });
 
-    // Heartbeat to keep participant active
-    const heartbeat = setInterval(async () => {
-      await supabase
-        .from('coding_room_participants')
-        .update({ last_seen_at: new Date().toISOString() })
-        .eq('room_id', room.id)
-        .eq('session_token', sessionToken);
+    // Handle chat messages via broadcast
+    channel.on('broadcast', { event: 'chat-message' }, ({ payload }) => {
+      const msg: ChatMessage = {
+        id: payload.id || crypto.randomUUID(),
+        username: payload.username,
+        content: payload.content,
+        created_at: payload.created_at || new Date().toISOString(),
+      };
+      
+      setMessages(prev => {
+        // Avoid duplicates
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+      
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    });
+
+    // Subscribe and track presence
+    channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        setIsConnected(true);
+        
+        // Track presence
+        await channel.track({
+          username,
+          isTyping: false,
+          lastActivity: new Date().toISOString(),
+        });
+
+        // Register as participant in database (session_token set by trigger)
+        try {
+          await supabase
+            .from('coding_room_participants')
+            .insert({
+              room_id: room.id,
+              username,
+              session_token: 'trigger-will-override', // Overwritten by trigger
+            });
+        } catch {
+          // May fail if already exists, that's ok
+        }
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        setIsConnected(false);
+      }
+    });
+
+    // Heartbeat for presence
+    const heartbeat = setInterval(() => {
+      channel.track({
+        username,
+        isTyping: false,
+        lastActivity: new Date().toISOString(),
+      });
     }, 30000);
 
-    // Subscribe to room content changes
-    const roomChannel = supabase
-      .channel(`room-${room.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'coding_rooms', filter: `id=eq.${room.id}` },
-        (payload) => {
-          const newContent = (payload.new as RoomData).content;
-          if (newContent !== content) {
-            setContent(newContent);
-          }
-        }
-      )
-      .subscribe();
-
-    // Subscribe to participant changes
-    const participantsChannel = supabase
-      .channel(`participants-${room.id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'coding_room_participants', filter: `room_id=eq.${room.id}` },
-        async () => {
-          // Refetch participants
-          const { data } = await supabase
-            .from('coding_room_participants')
-            .select('id, username, last_seen_at')
-            .eq('room_id', room.id)
-            .gte('last_seen_at', new Date(Date.now() - 2 * 60 * 1000).toISOString());
-          
-          if (data) setParticipants(data);
-        }
-      )
-      .subscribe();
-
-    // Initial fetch of participants
-    const fetchParticipants = async () => {
-      const { data } = await supabase
-        .from('coding_room_participants')
-        .select('id, username, last_seen_at')
-        .eq('room_id', room.id)
-        .gte('last_seen_at', new Date(Date.now() - 2 * 60 * 1000).toISOString());
-      
-      if (data) setParticipants(data);
-    };
-    fetchParticipants();
-
-    // Cleanup
     return () => {
       clearInterval(heartbeat);
-      supabase.removeChannel(roomChannel);
-      supabase.removeChannel(participantsChannel);
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+      channel.untrack();
+      supabase.removeChannel(channel);
+      channelRef.current = null;
     };
   }, [room, showUsernamePrompt, username]);
 
-  // Handle content changes with debounce
+  // Handle content changes with broadcast for real-time sync
   const handleContentChange = useCallback((newContent: string | undefined) => {
-    if (!room || !newContent) return;
+    if (!room || newContent === undefined) return;
     
     setContent(newContent);
 
-    // Debounce the update
+    // Broadcast to other users immediately
+    if (channelRef.current && newContent !== lastBroadcastContent.current) {
+      lastBroadcastContent.current = newContent;
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'code-update',
+        payload: {
+          content: newContent,
+          sender: username,
+        },
+      });
+    }
+
+    // Debounce the database update (for persistence)
     if (updateTimeoutRef.current) {
       clearTimeout(updateTimeoutRef.current);
     }
@@ -198,8 +237,8 @@ const CodingRoom = () => {
           last_activity_at: new Date().toISOString()
         })
         .eq('id', room.id);
-    }, 500);
-  }, [room]);
+    }, 1000);
+  }, [room, username]);
 
   // Copy room code
   const handleCopyCode = async () => {
@@ -219,21 +258,35 @@ const CodingRoom = () => {
     setShowUsernamePrompt(false);
   };
 
-  // Send chat message (placeholder - would need messages table)
+  // Send chat message via broadcast
   const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !channelRef.current) return;
     
+    const msgId = crypto.randomUUID();
     const msg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: msgId,
       username,
       content: newMessage,
       created_at: new Date().toISOString(),
     };
     
+    // Add locally first
     setMessages(prev => [...prev, msg]);
+    
+    // Broadcast to others
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'chat-message',
+      payload: {
+        id: msgId,
+        username,
+        content: newMessage,
+        created_at: msg.created_at,
+      },
+    });
+    
     setNewMessage('');
     
-    // Scroll to bottom
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
@@ -320,6 +373,8 @@ const CodingRoom = () => {
     );
   }
 
+  const participantList = Array.from(participants.values());
+
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
@@ -330,15 +385,23 @@ const CodingRoom = () => {
           </Button>
         </Link>
         
-        <div className="flex-1">
+        <div className="flex-1 flex items-center gap-3">
           <h1 className="font-cyber text-lg font-semibold text-foreground">{room.name}</h1>
+          {/* Connection status */}
+          <div className={`flex items-center gap-1 text-xs font-mono ${isConnected ? 'text-neon-green' : 'text-destructive'}`}>
+            {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+            {isConnected ? 'LIVE' : 'OFFLINE'}
+          </div>
+          {isSyncing && (
+            <span className="text-xs font-mono text-primary animate-pulse">syncing...</span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
           {/* Participants count */}
           <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-muted/30">
             <Users className="h-4 w-4 text-neon-green" />
-            <span className="font-mono text-sm">{participants.length}</span>
+            <span className="font-mono text-sm">{participantList.length}</span>
           </div>
 
           {/* Room code */}
@@ -372,6 +435,9 @@ const CodingRoom = () => {
             <span className="font-mono text-sm text-muted-foreground">
               {room.language}
             </span>
+            <span className="text-xs text-muted-foreground/70 ml-auto">
+              {participantList.length} collaborator{participantList.length !== 1 ? 's' : ''}
+            </span>
           </div>
           <div className="flex-1">
             <Editor
@@ -401,15 +467,20 @@ const CodingRoom = () => {
             {/* Participants */}
             <div className="p-3 border-b border-border/50">
               <h3 className="font-mono text-xs text-muted-foreground uppercase mb-2">
-                Online ({participants.length})
+                Online ({participantList.length})
               </h3>
               <div className="flex flex-wrap gap-1">
-                {participants.map((p) => (
+                {participantList.map((p) => (
                   <span
-                    key={p.id}
-                    className="text-xs font-mono px-2 py-1 rounded bg-neon-green/10 text-neon-green"
+                    key={p.username}
+                    className={`text-xs font-mono px-2 py-1 rounded ${
+                      p.username === username 
+                        ? 'bg-primary/20 text-primary' 
+                        : 'bg-neon-green/10 text-neon-green'
+                    }`}
                   >
                     {p.username}
+                    {p.username === username && ' (you)'}
                   </span>
                 ))}
               </div>
@@ -426,7 +497,9 @@ const CodingRoom = () => {
                   messages.map((msg) => (
                     <div key={msg.id} className="text-sm">
                       <div className="flex items-baseline gap-2">
-                        <span className="font-semibold text-primary">{msg.username}</span>
+                        <span className={`font-semibold ${msg.username === username ? 'text-primary' : 'text-neon-cyan'}`}>
+                          {msg.username}
+                        </span>
                         <span className="text-xs text-muted-foreground">
                           {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
                         </span>
@@ -453,6 +526,7 @@ const CodingRoom = () => {
                   size="icon"
                   onClick={handleSendMessage}
                   className="cyber-button shrink-0"
+                  disabled={!isConnected}
                 >
                   <Send className="h-4 w-4" />
                 </Button>

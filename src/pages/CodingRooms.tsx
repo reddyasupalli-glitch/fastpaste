@@ -27,16 +27,6 @@ const generateRoomCode = () => {
   return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 };
 
-// Get session token for ownership
-const getSessionToken = (): string => {
-  let token = localStorage.getItem('fp-session-token');
-  if (!token) {
-    token = crypto.randomUUID();
-    localStorage.setItem('fp-session-token', token);
-  }
-  return token;
-};
-
 const CodingRooms = () => {
   const navigate = useNavigate();
   const [rooms, setRooms] = useState<CodingRoom[]>([]);
@@ -82,9 +72,9 @@ const CodingRooms = () => {
     setCreating(true);
 
     try {
-      const sessionToken = getSessionToken();
       const code = generateRoomCode();
 
+      // Session token is automatically set by database trigger
       const { data, error } = await supabase
         .from('coding_rooms')
         .insert({
@@ -92,8 +82,6 @@ const CodingRooms = () => {
           name: roomName.trim(),
           is_private: isPrivate,
           language: selectedLanguage,
-          session_token: sessionToken,
-          created_by: sessionToken,
         })
         .select('code')
         .single();
