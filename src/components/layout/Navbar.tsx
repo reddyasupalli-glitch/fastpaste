@@ -1,11 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Terminal, MessageSquare, Code2, Users, Globe, Menu, X } from 'lucide-react';
+import { Terminal, Code2, Users, Globe, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/chat', label: 'Chat', icon: MessageSquare },
   { href: '/paste', label: 'Paste', icon: Code2 },
   { href: '/rooms', label: 'Rooms', icon: Users },
   { href: '/explore', label: 'Explore', icon: Globe },
