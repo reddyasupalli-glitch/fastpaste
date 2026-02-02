@@ -37,15 +37,7 @@ const getExpirationDate = (value: string): string | null => {
   }
 };
 
-// Get session token for ownership
-const getSessionToken = (): string => {
-  let token = localStorage.getItem('fp-session-token');
-  if (!token) {
-    token = crypto.randomUUID();
-    localStorage.setItem('fp-session-token', token);
-  }
-  return token;
-};
+// Session token is handled automatically by the supabase client header middleware
 
 const Paste = () => {
   const navigate = useNavigate();
@@ -71,8 +63,7 @@ const Paste = () => {
     setIsCreating(true);
 
     try {
-      const sessionToken = getSessionToken();
-      
+      // Session token is automatically set by database trigger from the x-session-token header
       const { data, error } = await supabase
         .from('pastes')
         .insert({
@@ -82,7 +73,6 @@ const Paste = () => {
           visibility,
           burn_after_read: burnAfterRead,
           expires_at: getExpirationDate(expiration),
-          session_token: sessionToken,
         })
         .select('id')
         .single();
