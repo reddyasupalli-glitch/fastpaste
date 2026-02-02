@@ -7,7 +7,6 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 
 // Pages
 import Landing from "./pages/Landing";
-import Chat from "./pages/Chat";
 import Paste from "./pages/Paste";
 import PasteView from "./pages/PasteView";
 import CodingRooms from "./pages/CodingRooms";
@@ -32,7 +31,6 @@ const App = () => {
             <Routes>
               {/* Main Routes */}
               <Route path="/" element={<Landing />} />
-              <Route path="/chat" element={<Chat />} />
               
               {/* Paste System */}
               <Route path="/paste" element={<Paste />} />
