@@ -47,6 +47,13 @@ export type Database = {
             referencedRelation: "coding_rooms"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "coding_room_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "coding_rooms_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       coding_rooms: {
@@ -190,39 +197,48 @@ export type Database = {
       }
       pastes: {
         Row: {
+          access_code: string | null
           burn_after_read: boolean
           content: string
           created_at: string
           created_by: string | null
           expires_at: string | null
+          forked_from: string | null
           id: string
           language: string
+          password_hash: string | null
           session_token: string | null
           title: string | null
           views: number
           visibility: string
         }
         Insert: {
+          access_code?: string | null
           burn_after_read?: boolean
           content: string
           created_at?: string
           created_by?: string | null
           expires_at?: string | null
+          forked_from?: string | null
           id?: string
           language?: string
+          password_hash?: string | null
           session_token?: string | null
           title?: string | null
           views?: number
           visibility?: string
         }
         Update: {
+          access_code?: string | null
           burn_after_read?: boolean
           content?: string
           created_at?: string
           created_by?: string | null
           expires_at?: string | null
+          forked_from?: string | null
           id?: string
           language?: string
+          password_hash?: string | null
           session_token?: string | null
           title?: string | null
           views?: number
@@ -267,7 +283,114 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      coding_room_participants_public: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          last_seen_at: string | null
+          room_id: string | null
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          last_seen_at?: string | null
+          room_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          last_seen_at?: string | null
+          room_id?: string | null
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coding_room_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "coding_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coding_room_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "coding_rooms_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coding_rooms_public: {
+        Row: {
+          code: string | null
+          content: string | null
+          created_at: string | null
+          id: string | null
+          is_private: boolean | null
+          language: string | null
+          last_activity_at: string | null
+          name: string | null
+        }
+        Insert: {
+          code?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_private?: boolean | null
+          language?: string | null
+          last_activity_at?: string | null
+          name?: string | null
+        }
+        Update: {
+          code?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_private?: boolean | null
+          language?: string | null
+          last_activity_at?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
+      pastes_public: {
+        Row: {
+          burn_after_read: boolean | null
+          content: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string | null
+          language: string | null
+          title: string | null
+          views: number | null
+          visibility: string | null
+        }
+        Insert: {
+          burn_after_read?: boolean | null
+          content?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          language?: string | null
+          title?: string | null
+          views?: number | null
+          visibility?: string | null
+        }
+        Update: {
+          burn_after_read?: boolean | null
+          content?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          language?: string | null
+          title?: string | null
+          views?: number | null
+          visibility?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       create_group: {
@@ -283,6 +406,10 @@ export type Database = {
         Args: { p_group_id: string; p_username: string }
         Returns: boolean
       }
+      delete_coding_room: { Args: { room_id: string }; Returns: boolean }
+      delete_paste: { Args: { paste_id: string }; Returns: boolean }
+      fork_paste: { Args: { source_paste_id: string }; Returns: string }
+      generate_paste_access_code: { Args: never; Returns: string }
       get_room_participants: {
         Args: { p_group_id: string }
         Returns: {
@@ -294,6 +421,7 @@ export type Database = {
       }
       get_session_token: { Args: never; Returns: string }
       get_verified_username: { Args: never; Returns: string }
+      hash_paste_password: { Args: { password: string }; Returns: string }
       hash_session_token: { Args: { token: string }; Returns: string }
       increment_paste_views: { Args: { paste_id: string }; Returns: undefined }
       is_code_lookup: { Args: never; Returns: boolean }
@@ -311,21 +439,42 @@ export type Database = {
         Args: { p_group_id: string; p_session_token: string }
         Returns: boolean
       }
-      view_paste: {
-        Args: { paste_id: string }
-        Returns: {
-          burn_after_read: boolean
-          content: string
-          created_at: string
-          created_by: string
-          expires_at: string
-          id: string
-          language: string
-          title: string
-          views: number
-          visibility: string
-        }[]
+      verify_paste_password: {
+        Args: { password: string; paste_id: string }
+        Returns: boolean
       }
+      view_paste:
+        | {
+            Args: { paste_id: string }
+            Returns: {
+              burn_after_read: boolean
+              content: string
+              created_at: string
+              created_by: string
+              expires_at: string
+              id: string
+              language: string
+              title: string
+              views: number
+              visibility: string
+            }[]
+          }
+        | {
+            Args: { password?: string; paste_id: string }
+            Returns: {
+              burn_after_read: boolean
+              content: string
+              created_at: string
+              created_by: string
+              expires_at: string
+              id: string
+              language: string
+              requires_password: boolean
+              title: string
+              views: number
+              visibility: string
+            }[]
+          }
     }
     Enums: {
       [_ in never]: never
