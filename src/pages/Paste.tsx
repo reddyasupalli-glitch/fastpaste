@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Code2, Copy, Check, Clock, Eye, EyeOff, Flame, Terminal } from 'lucide-react';
+import { Code2, Clock, Eye, EyeOff, Flame, Terminal, Lock, Share2 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,8 +37,6 @@ const getExpirationDate = (value: string): string | null => {
   }
 };
 
-// Session token is handled automatically by the supabase client header middleware
-
 const Paste = () => {
   const navigate = useNavigate();
   const [content, setContent] = useState('// Start coding here...\n');
@@ -47,6 +45,8 @@ const Paste = () => {
   const [visibility, setVisibility] = useState<'public' | 'unlisted'>('public');
   const [expiration, setExpiration] = useState('never');
   const [burnAfterRead, setBurnAfterRead] = useState(false);
+  const [password, setPassword] = useState('');
+  const [generateAccessCode, setGenerateAccessCode] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreate = useCallback(async () => {
@@ -63,7 +63,20 @@ const Paste = () => {
     setIsCreating(true);
 
     try {
-      // Session token is automatically set by database trigger from the x-session-token header
+      // Hash password if provided
+      let passwordHash = null;
+      if (password) {
+        const { data: hashData } = await supabase.rpc('hash_paste_password', { password });
+        passwordHash = hashData;
+      }
+
+      // Generate access code if requested
+      let accessCode = null;
+      if (generateAccessCode && visibility === 'unlisted') {
+        const { data: codeData } = await supabase.rpc('generate_paste_access_code');
+        accessCode = codeData;
+      }
+
       const { data, error } = await supabase
         .from('pastes')
         .insert({
@@ -73,20 +86,28 @@ const Paste = () => {
           visibility,
           burn_after_read: burnAfterRead,
           expires_at: getExpirationDate(expiration),
+          password_hash: passwordHash,
+          access_code: accessCode,
         })
-        .select('id')
+        .select('id, access_code')
         .single();
 
       if (error) throw error;
 
-      toast.success('Paste created successfully!');
+      let successMsg = 'Paste created successfully!';
+      if (data.access_code) {
+        successMsg += ` Access code: ${data.access_code}`;
+        await navigator.clipboard.writeText(data.access_code);
+      }
+      
+      toast.success(successMsg);
       navigate(`/paste/${data.id}`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to create paste');
     } finally {
       setIsCreating(false);
     }
-  }, [content, title, language, visibility, expiration, burnAfterRead, navigate]);
+  }, [content, title, language, visibility, expiration, burnAfterRead, password, generateAccessCode, navigate]);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -236,6 +257,47 @@ const Paste = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Password protection */}
+              <div className="space-y-2">
+                <Label className="font-mono text-sm flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  Password (optional)
+                </Label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  className="cyber-input"
+                  maxLength={50}
+                />
+                {password && (
+                  <p className="text-xs text-muted-foreground font-mono">
+                    Viewers will need this password to see the content
+                  </p>
+                )}
+              </div>
+
+              {/* Access code for unlisted */}
+              {visibility === 'unlisted' && (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/30">
+                  <div className="flex items-center gap-2">
+                    <Share2 className="h-4 w-4 text-primary" />
+                    <Label className="font-mono text-sm cursor-pointer">Generate access code</Label>
+                  </div>
+                  <Switch
+                    checked={generateAccessCode}
+                    onCheckedChange={setGenerateAccessCode}
+                  />
+                </div>
+              )}
+
+              {generateAccessCode && visibility === 'unlisted' && (
+                <p className="text-xs text-primary font-mono">
+                  ⚡ A shareable code will be generated for this paste
+                </p>
+              )}
 
               {/* Burn after read */}
               <div className="flex items-center justify-between p-3 rounded-lg bg-destructive/10 border border-destructive/30">

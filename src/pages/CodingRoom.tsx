@@ -1,18 +1,31 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Copy, Check, Terminal, ArrowLeft, Send, 
-  MessageSquare, User, Wifi, WifiOff
+  MessageSquare, User, Wifi, WifiOff, Trash2, Play,
+  Bot
 } from 'lucide-react';
-import Editor from '@monaco-editor/react';
+import Editor, { OnMount } from '@monaco-editor/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase, getSessionToken } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { getCursorColor } from '@/components/rooms/CursorOverlay';
+import { LivePreview } from '@/components/rooms/LivePreview';
+import { AICodeHelper } from '@/components/rooms/AICodeHelper';
+import type { editor as MonacoEditor, Range as MonacoRange } from 'monaco-editor';
+
+const LANGUAGES = [
+  'javascript', 'typescript', 'python', 'java', 'csharp', 'cpp', 
+  'c', 'go', 'rust', 'ruby', 'php', 'swift', 'kotlin', 'scala', 'html', 
+  'css', 'scss', 'json', 'yaml', 'xml', 'markdown', 'sql', 'shell', 'dockerfile'
+];
 
 interface RoomData {
   id: string;
@@ -21,12 +34,15 @@ interface RoomData {
   content: string;
   language: string;
   is_private: boolean;
+  session_token?: string;
 }
 
 interface Participant {
   username: string;
   isTyping?: boolean;
   lastActivity?: string;
+  cursorPosition?: { line: number; column: number };
+  color?: string;
 }
 
 interface ChatMessage {
@@ -38,11 +54,13 @@ interface ChatMessage {
 
 const CodingRoom = () => {
   const { roomCode } = useParams<{ roomCode: string }>();
+  const navigate = useNavigate();
   
   const [room, setRoom] = useState<RoomData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [content, setContent] = useState('');
+  const [language, setLanguage] = useState('javascript');
   const [username, setUsername] = useState('');
   const [showUsernamePrompt, setShowUsernamePrompt] = useState(true);
   const [participants, setParticipants] = useState<Map<string, Participant>>(new Map());
@@ -50,13 +68,19 @@ const CodingRoom = () => {
   const [newMessage, setNewMessage] = useState('');
   const [copied, setCopied] = useState(false);
   const [showChat, setShowChat] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showAI, setShowAI] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastBroadcastContent = useRef('');
+  const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
+  const decorationsRef = useRef<string[]>([]);
+  const monacoRef = useRef<{ Range: typeof MonacoRange; editor: typeof MonacoEditor } | null>(null);
 
   // Fetch room data
   useEffect(() => {
@@ -78,7 +102,12 @@ const CodingRoom = () => {
 
         setRoom(data);
         setContent(data.content || '');
+        setLanguage(data.language || 'javascript');
         lastBroadcastContent.current = data.content || '';
+        
+        // Check if current user is owner
+        const sessionToken = getSessionToken();
+        setIsOwner(data.session_token === sessionToken || data.created_by === sessionToken);
       } catch (err: any) {
         setError(err.message || 'Failed to load room');
       } finally {
@@ -89,13 +118,103 @@ const CodingRoom = () => {
     fetchRoom();
   }, [roomCode]);
 
+  // Handle editor mount
+  const handleEditorMount: OnMount = (editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = { Range: monaco.Range, editor: monaco.editor };
+
+    // Track cursor position changes
+    editor.onDidChangeCursorPosition((e) => {
+      if (channelRef.current && username) {
+        channelRef.current.track({
+          username,
+          isTyping: true,
+          lastActivity: new Date().toISOString(),
+          cursorPosition: {
+            line: e.position.lineNumber,
+            column: e.position.column,
+          },
+          color: getCursorColor(username),
+        });
+      }
+    });
+  };
+
+  // Update cursor decorations when participants change
+  useEffect(() => {
+    if (!editorRef.current || !monacoRef.current) return;
+
+    const { Range, editor: monacoEditor } = monacoRef.current;
+    const editor = editorRef.current;
+    const model = editor.getModel();
+    if (!model) return;
+
+    const newDecorations: MonacoEditor.IModelDeltaDecoration[] = [];
+
+    participants.forEach((participant) => {
+      if (participant.username === username || !participant.cursorPosition) return;
+
+      const { line, column } = participant.cursorPosition;
+
+      // Cursor line decoration
+      newDecorations.push({
+        range: new Range(line, column, line, column + 1),
+        options: {
+          className: `cursor-${participant.username.replace(/[^a-zA-Z0-9]/g, '')}`,
+          beforeContentClassName: 'remote-cursor',
+          hoverMessage: { value: participant.username },
+          stickiness: monacoEditor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+        },
+      });
+    });
+
+    // Update decorations
+    decorationsRef.current = editor.deltaDecorations(decorationsRef.current, newDecorations);
+
+    // Inject CSS for cursor colors
+    const styleId = 'remote-cursor-styles';
+    let styleEl = document.getElementById(styleId);
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+
+    const css = Array.from(participants.values())
+      .filter(p => p.username !== username && p.cursorPosition)
+      .map(p => {
+        const safeUsername = p.username.replace(/[^a-zA-Z0-9]/g, '');
+        const color = p.color || getCursorColor(p.username);
+        return `
+          .cursor-${safeUsername}::before {
+            content: '${p.username}';
+            position: absolute;
+            top: -18px;
+            left: 0;
+            background: ${color};
+            color: black;
+            font-size: 10px;
+            padding: 1px 4px;
+            border-radius: 2px;
+            white-space: nowrap;
+            z-index: 100;
+          }
+          .cursor-${safeUsername} {
+            border-left: 2px solid ${color};
+            position: relative;
+          }
+        `;
+      }).join('\n');
+
+    styleEl.textContent = css;
+  }, [participants, username]);
+
   // Join room and set up real-time subscriptions
   useEffect(() => {
     if (!room || showUsernamePrompt || !username) return;
 
     const sessionKey = `${getSessionToken()}-${Date.now()}`;
 
-    // Create a unique channel for this room
     const channel = supabase.channel(`room-collab-${room.id}`, {
       config: {
         presence: { key: sessionKey },
@@ -117,6 +236,8 @@ const CodingRoom = () => {
               username: presence.username,
               isTyping: presence.isTyping,
               lastActivity: presence.lastActivity,
+              cursorPosition: presence.cursorPosition,
+              color: presence.color,
             });
           }
         });
@@ -125,10 +246,9 @@ const CodingRoom = () => {
       setParticipants(newParticipants);
     });
 
-    // Handle real-time code updates via broadcast (instant, no database latency)
+    // Handle real-time code updates
     channel.on('broadcast', { event: 'code-update' }, ({ payload }) => {
       if (payload.sender !== username && payload.content !== undefined) {
-        // Only update if it's from another user
         setContent(payload.content);
         lastBroadcastContent.current = payload.content;
         setIsSyncing(true);
@@ -136,7 +256,14 @@ const CodingRoom = () => {
       }
     });
 
-    // Handle chat messages via broadcast
+    // Handle language changes
+    channel.on('broadcast', { event: 'language-change' }, ({ payload }) => {
+      if (payload.sender !== username && payload.language) {
+        setLanguage(payload.language);
+      }
+    });
+
+    // Handle chat messages
     channel.on('broadcast', { event: 'chat-message' }, ({ payload }) => {
       const msg: ChatMessage = {
         id: payload.id || crypto.randomUUID(),
@@ -146,7 +273,6 @@ const CodingRoom = () => {
       };
       
       setMessages(prev => {
-        // Avoid duplicates
         if (prev.some(m => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
@@ -161,36 +287,35 @@ const CodingRoom = () => {
       if (status === 'SUBSCRIBED') {
         setIsConnected(true);
         
-        // Track presence
         await channel.track({
           username,
           isTyping: false,
           lastActivity: new Date().toISOString(),
+          color: getCursorColor(username),
         });
 
-        // Register as participant in database (session_token set by trigger)
         try {
           await supabase
             .from('coding_room_participants')
             .insert({
               room_id: room.id,
               username,
-              session_token: 'trigger-will-override', // Overwritten by trigger
+              session_token: 'trigger-will-override',
             });
         } catch {
-          // May fail if already exists, that's ok
+          // May fail if already exists
         }
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         setIsConnected(false);
       }
     });
 
-    // Heartbeat for presence
     const heartbeat = setInterval(() => {
       channel.track({
         username,
         isTyping: false,
         lastActivity: new Date().toISOString(),
+        color: getCursorColor(username),
       });
     }, 30000);
 
@@ -205,26 +330,21 @@ const CodingRoom = () => {
     };
   }, [room, showUsernamePrompt, username]);
 
-  // Handle content changes with broadcast for real-time sync
+  // Handle content changes
   const handleContentChange = useCallback((newContent: string | undefined) => {
     if (!room || newContent === undefined) return;
     
     setContent(newContent);
 
-    // Broadcast to other users immediately
     if (channelRef.current && newContent !== lastBroadcastContent.current) {
       lastBroadcastContent.current = newContent;
       channelRef.current.send({
         type: 'broadcast',
         event: 'code-update',
-        payload: {
-          content: newContent,
-          sender: username,
-        },
+        payload: { content: newContent, sender: username },
       });
     }
 
-    // Debounce the database update (for persistence)
     if (updateTimeoutRef.current) {
       clearTimeout(updateTimeoutRef.current);
     }
@@ -239,6 +359,26 @@ const CodingRoom = () => {
         .eq('id', room.id);
     }, 1000);
   }, [room, username]);
+
+  // Handle language change
+  const handleLanguageChange = async (newLanguage: string) => {
+    setLanguage(newLanguage);
+    
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'language-change',
+        payload: { language: newLanguage, sender: username },
+      });
+    }
+
+    if (room) {
+      await supabase
+        .from('coding_rooms')
+        .update({ language: newLanguage })
+        .eq('id', room.id);
+    }
+  };
 
   // Copy room code
   const handleCopyCode = async () => {
@@ -258,7 +398,7 @@ const CodingRoom = () => {
     setShowUsernamePrompt(false);
   };
 
-  // Send chat message via broadcast
+  // Send chat message
   const handleSendMessage = () => {
     if (!newMessage.trim() || !channelRef.current) return;
     
@@ -270,19 +410,12 @@ const CodingRoom = () => {
       created_at: new Date().toISOString(),
     };
     
-    // Add locally first
     setMessages(prev => [...prev, msg]);
     
-    // Broadcast to others
     channelRef.current.send({
       type: 'broadcast',
       event: 'chat-message',
-      payload: {
-        id: msgId,
-        username,
-        content: newMessage,
-        created_at: msg.created_at,
-      },
+      payload: { id: msgId, username, content: newMessage, created_at: msg.created_at },
     });
     
     setNewMessage('');
@@ -290,6 +423,22 @@ const CodingRoom = () => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
+  };
+
+  // Delete room
+  const handleDeleteRoom = async () => {
+    if (!room) return;
+
+    try {
+      const { error } = await supabase.rpc('delete_coding_room', { room_id: room.id });
+      
+      if (error) throw error;
+      
+      toast.success('Room deleted');
+      navigate('/rooms');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete room');
+    }
   };
 
   // Loading state
@@ -387,7 +536,6 @@ const CodingRoom = () => {
         
         <div className="flex-1 flex items-center gap-3">
           <h1 className="font-cyber text-lg font-semibold text-foreground">{room.name}</h1>
-          {/* Connection status */}
           <div className={`flex items-center gap-1 text-xs font-mono ${isConnected ? 'text-neon-green' : 'text-destructive'}`}>
             {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
             {isConnected ? 'LIVE' : 'OFFLINE'}
@@ -398,23 +546,55 @@ const CodingRoom = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Participants count */}
+          {/* Language selector */}
+          <Select value={language} onValueChange={handleLanguageChange}>
+            <SelectTrigger className="w-32 h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map((lang) => (
+                <SelectItem key={lang} value={lang} className="text-xs">
+                  {lang}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Participants */}
           <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-muted/30">
             <Users className="h-4 w-4 text-neon-green" />
             <span className="font-mono text-sm">{participantList.length}</span>
           </div>
 
           {/* Room code */}
-          <Button
-            variant="ghost"
-            onClick={handleCopyCode}
-            className="gap-2 font-mono text-sm neon-border"
-          >
+          <Button variant="ghost" onClick={handleCopyCode} className="gap-2 font-mono text-sm neon-border">
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             {room.code}
           </Button>
 
-          {/* Toggle chat */}
+          {/* Preview toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => { setShowPreview(!showPreview); setShowAI(false); }}
+            className={showPreview ? 'text-neon-green' : 'text-muted-foreground'}
+            title="Live Preview"
+          >
+            <Play className="h-5 w-5" />
+          </Button>
+
+          {/* AI helper toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => { setShowAI(!showAI); setShowPreview(false); }}
+            className={showAI ? 'text-neon-purple' : 'text-muted-foreground'}
+            title="AI Code Helper"
+          >
+            <Bot className="h-5 w-5" />
+          </Button>
+
+          {/* Chat toggle */}
           <Button
             variant="ghost"
             size="icon"
@@ -423,6 +603,31 @@ const CodingRoom = () => {
           >
             <MessageSquare className="h-5 w-5" />
           </Button>
+
+          {/* Delete room (owner only) */}
+          {isOwner && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                  <Trash2 className="h-5 w-5" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Room?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete this coding room and all its content. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteRoom} className="bg-destructive text-destructive-foreground">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </header>
 
@@ -432,19 +637,18 @@ const CodingRoom = () => {
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="h-10 border-b border-border/50 flex items-center px-4 gap-2 bg-muted/20">
             <Terminal className="h-4 w-4 text-primary" />
-            <span className="font-mono text-sm text-muted-foreground">
-              {room.language}
-            </span>
+            <span className="font-mono text-sm text-muted-foreground">{language}</span>
             <span className="text-xs text-muted-foreground/70 ml-auto">
               {participantList.length} collaborator{participantList.length !== 1 ? 's' : ''}
             </span>
           </div>
-          <div className="flex-1">
+          <div className="flex-1 relative">
             <Editor
               height="100%"
-              language={room.language}
+              language={language}
               value={content}
               onChange={handleContentChange}
+              onMount={handleEditorMount}
               theme="vs-dark"
               options={{
                 fontSize: 14,
@@ -461,6 +665,28 @@ const CodingRoom = () => {
           </div>
         </div>
 
+        {/* Live Preview */}
+        <AnimatePresence>
+          {showPreview && (
+            <LivePreview
+              code={content}
+              language={language}
+              onClose={() => setShowPreview(false)}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* AI Helper */}
+        <AnimatePresence>
+          {showAI && (
+            <AICodeHelper
+              code={content}
+              language={language}
+              onClose={() => setShowAI(false)}
+            />
+          )}
+        </AnimatePresence>
+
         {/* Chat sidebar */}
         {showChat && (
           <div className="w-80 border-l border-border/50 flex flex-col bg-card/50">
@@ -473,12 +699,16 @@ const CodingRoom = () => {
                 {participantList.map((p) => (
                   <span
                     key={p.username}
-                    className={`text-xs font-mono px-2 py-1 rounded ${
-                      p.username === username 
-                        ? 'bg-primary/20 text-primary' 
-                        : 'bg-neon-green/10 text-neon-green'
-                    }`}
+                    className="text-xs font-mono px-2 py-1 rounded flex items-center gap-1"
+                    style={{
+                      backgroundColor: `${p.color || getCursorColor(p.username)}20`,
+                      color: p.color || getCursorColor(p.username),
+                    }}
                   >
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: p.color || getCursorColor(p.username) }}
+                    />
                     {p.username}
                     {p.username === username && ' (you)'}
                   </span>
@@ -497,7 +727,10 @@ const CodingRoom = () => {
                   messages.map((msg) => (
                     <div key={msg.id} className="text-sm">
                       <div className="flex items-baseline gap-2">
-                        <span className={`font-semibold ${msg.username === username ? 'text-primary' : 'text-neon-cyan'}`}>
+                        <span 
+                          className="font-semibold"
+                          style={{ color: getCursorColor(msg.username) }}
+                        >
                           {msg.username}
                         </span>
                         <span className="text-xs text-muted-foreground">

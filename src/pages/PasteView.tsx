@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Code2, Copy, Check, Clock, Eye, Flame, ArrowLeft, ExternalLink, Terminal } from 'lucide-react';
+import { Code2, Copy, Check, Clock, Eye, Flame, ArrowLeft, ExternalLink, Terminal, Lock, GitFork, Trash2 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Navbar } from '@/components/layout/Navbar';
-import { supabase } from '@/integrations/supabase/client';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { supabase, getSessionToken } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDistanceToNow, differenceInSeconds } from 'date-fns';
 
@@ -19,40 +21,67 @@ interface Paste {
   views: number;
   expires_at: string | null;
   created_at: string;
+  requires_password?: boolean;
 }
 
 const PasteView = () => {
   const { pasteId } = useParams<{ pasteId: string }>();
+  const navigate = useNavigate();
   const [paste, setPaste] = useState<Paste | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string | null>(null);
+  const [passwordRequired, setPasswordRequired] = useState(false);
+  const [password, setPassword] = useState('');
+  const [checkingPassword, setCheckingPassword] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+
+  const fetchPaste = async (pwd?: string) => {
+    if (!pasteId) return;
+
+    try {
+      setCheckingPassword(true);
+      
+      const { data, error } = await supabase
+        .rpc('view_paste', { paste_id: pasteId, password: pwd || null });
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        setError('Paste not found or has expired');
+        return;
+      }
+
+      const pasteData = data[0] as Paste;
+      
+      if (pasteData.requires_password && !pwd) {
+        setPasswordRequired(true);
+        setPaste({ ...pasteData, content: '' });
+        return;
+      }
+
+      if (pasteData.requires_password && pasteData.content === '') {
+        toast.error('Incorrect password');
+        return;
+      }
+
+      setPasswordRequired(false);
+      setPaste(pasteData);
+      
+      // Check ownership
+      const sessionToken = getSessionToken();
+      // We can't directly check session_token from RPC, so we'll try delete
+      setIsOwner(false); // Default to false, real ownership checked on delete attempt
+    } catch (err: any) {
+      setError(err.message || 'Failed to load paste');
+    } finally {
+      setLoading(false);
+      setCheckingPassword(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchPaste = async () => {
-      if (!pasteId) return;
-
-      try {
-        // Use the view_paste function to handle burn-after-read and view counting
-        const { data, error } = await supabase
-          .rpc('view_paste', { paste_id: pasteId });
-
-        if (error) throw error;
-
-        if (!data || data.length === 0) {
-          setError('Paste not found or has expired');
-          return;
-        }
-
-        setPaste(data[0] as Paste);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load paste');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchPaste();
   }, [pasteId]);
 
@@ -97,6 +126,49 @@ const PasteView = () => {
     toast.success('Link copied!');
   };
 
+  const handlePasswordSubmit = () => {
+    if (!password.trim()) {
+      toast.error('Please enter a password');
+      return;
+    }
+    fetchPaste(password);
+  };
+
+  const handleFork = async () => {
+    if (!paste) return;
+
+    try {
+      const { data, error } = await supabase.rpc('fork_paste', { source_paste_id: paste.id });
+      
+      if (error) throw error;
+      
+      toast.success('Paste forked!');
+      navigate(`/paste/${data}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to fork paste');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!paste) return;
+
+    try {
+      const { data, error } = await supabase.rpc('delete_paste', { paste_id: paste.id });
+      
+      if (error) throw error;
+      
+      if (!data) {
+        toast.error('You can only delete your own pastes');
+        return;
+      }
+      
+      toast.success('Paste deleted');
+      navigate('/explore');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete paste');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -129,6 +201,51 @@ const PasteView = () => {
                 <span className="font-cyber">CREATE_NEW_PASTE</span>
               </Button>
             </Link>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  // Password prompt
+  if (passwordRequired) {
+    return (
+      <div className="min-h-screen bg-background relative overflow-hidden">
+        <div className="absolute inset-0 gradient-animate" />
+        <Navbar />
+        <div className="relative z-10 min-h-screen flex items-center justify-center px-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-panel p-8 max-w-md w-full"
+          >
+            <div className="text-center mb-6">
+              <Lock className="h-12 w-12 text-primary mx-auto mb-4" />
+              <h2 className="font-cyber text-xl font-bold">PASSWORD_REQUIRED</h2>
+              <p className="text-muted-foreground font-mono text-sm mt-2">
+                {paste.title || 'This paste'} is protected
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                className="cyber-input text-center"
+                onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+              />
+              <Button 
+                onClick={handlePasswordSubmit} 
+                className="w-full cyber-button"
+                disabled={checkingPassword}
+              >
+                <span className="font-cyber">
+                  {checkingPassword ? 'CHECKING...' : 'UNLOCK'}
+                </span>
+              </Button>
+            </div>
           </motion.div>
         </div>
       </div>
@@ -195,6 +312,19 @@ const PasteView = () => {
 
               <div className="flex-1" />
 
+              {/* Fork button */}
+              {paste.visibility === 'public' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleFork}
+                  className="gap-2 text-muted-foreground hover:text-neon-cyan"
+                >
+                  <GitFork className="h-4 w-4" />
+                  Fork
+                </Button>
+              )}
+
               <Button
                 variant="ghost"
                 size="sm"
@@ -214,6 +344,35 @@ const PasteView = () => {
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 {copied ? 'Copied!' : 'Copy'}
               </Button>
+
+              {/* Delete button */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Paste?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete this paste. This action cannot be undone.
+                      Note: You can only delete pastes you created.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </motion.div>
 

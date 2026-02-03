@@ -3,11 +3,8 @@ project_id = "bqrgnunmyqbhwaivywnc"
 [functions.cleanup-expired-groups]
 verify_jwt = false
 
-[functions.generate-background]
-verify_jwt = false
-
-[functions.chat-ai]
-verify_jwt = false
-
 [functions.verify-room-password]
+verify_jwt = false
+
+[functions.ai-code-helper]
 verify_jwt = false

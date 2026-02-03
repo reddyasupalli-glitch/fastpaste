@@ -21,9 +21,9 @@ interface CodingRoom {
   last_activity_at: string;
 }
 
-// Generate a random 6-character room code
+// Generate a random 6-character room code (numbers only)
 const generateRoomCode = () => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const chars = '0123456789';
   return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 };
 

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
-  MessageSquare, 
   Code2, 
   Users, 
   Globe, 
@@ -186,7 +185,7 @@ const Landing = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 1.5 }}
             >
-              Real-time chat • Instant code pastes • Live collaborative coding
+              Instant code pastes • Live collaborative coding • AI-powered assistance
             </motion.p>
 
             {/* CTA Buttons */}
@@ -229,30 +228,22 @@ const Landing = () => {
               </div>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <FeatureCard
-                icon={MessageSquare}
-                title="CHAT_SYSTEM"
-                description="Real-time developer chat with code snippets, reactions, and room support."
-                href="/chat"
-                color="cyan"
-                delay={2.1}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <FeatureCard
                 icon={Code2}
                 title="CODE_PASTE"
-                description="Monaco-powered editor with syntax highlighting, expiration & burn-after-read."
+                description="Monaco-powered editor with syntax highlighting, password protection, expiration & burn-after-read."
                 href="/paste"
                 color="purple"
-                delay={2.2}
+                delay={2.1}
               />
               <FeatureCard
                 icon={Users}
                 title="LIVE_ROOMS"
-                description="Collaborative coding rooms with real-time sync and integrated chat."
+                description="Real-time collaborative coding with cursor presence, live preview, and AI assistance."
                 href="/rooms"
                 color="pink"
-                delay={2.3}
+                delay={2.2}
               />
               <FeatureCard
                 icon={Globe}
@@ -260,7 +251,7 @@ const Landing = () => {
                 description="Discover trending pastes, active rooms, and connect with developers."
                 href="/explore"
                 color="green"
-                delay={2.4}
+                delay={2.3}
               />
             </div>
           </div>
