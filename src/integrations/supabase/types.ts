@@ -410,8 +410,47 @@ export type Database = {
       delete_paste: { Args: { paste_id: string }; Returns: boolean }
       fork_paste: { Args: { source_paste_id: string }; Returns: string }
       generate_paste_access_code: { Args: never; Returns: string }
+      get_paste_by_id: {
+        Args: { paste_id: string }
+        Returns: {
+          burn_after_read: boolean
+          content: string
+          created_at: string
+          expires_at: string
+          id: string
+          is_owner: boolean
+          language: string
+          requires_password: boolean
+          title: string
+          views: number
+          visibility: string
+        }[]
+      }
+      get_room_by_code: {
+        Args: { room_code: string }
+        Returns: {
+          code: string
+          content: string
+          created_at: string
+          id: string
+          is_owner: boolean
+          is_private: boolean
+          language: string
+          last_activity_at: string
+          name: string
+        }[]
+      }
       get_room_participants: {
         Args: { p_group_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          last_seen_at: string
+          username: string
+        }[]
+      }
+      get_room_participants_safe: {
+        Args: { p_room_id: string }
         Returns: {
           created_at: string
           id: string
@@ -433,6 +472,30 @@ export type Database = {
           created_at: string
           id: string
           room_type: string
+        }[]
+      }
+      list_public_pastes: {
+        Args: { limit_count?: number }
+        Returns: {
+          burn_after_read: boolean
+          created_at: string
+          expires_at: string
+          id: string
+          language: string
+          title: string
+          views: number
+          visibility: string
+        }[]
+      }
+      list_public_rooms: {
+        Args: { limit_count?: number }
+        Returns: {
+          code: string
+          created_at: string
+          id: string
+          language: string
+          last_activity_at: string
+          name: string
         }[]
       }
       user_is_in_room: {

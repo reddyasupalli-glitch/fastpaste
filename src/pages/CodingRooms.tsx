@@ -40,19 +40,17 @@ const CodingRooms = () => {
   const [isPrivate, setIsPrivate] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
 
-  // Fetch public rooms
+  // Fetch public rooms using secure function
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const { data, error } = await supabase
-          .from('coding_rooms')
-          .select('*')
-          .eq('is_private', false)
-          .order('last_activity_at', { ascending: false })
-          .limit(20);
+        const { data, error } = await supabase.rpc('list_public_rooms', { limit_count: 20 });
 
         if (error) throw error;
-        setRooms(data || []);
+        setRooms((data || []).map((r: any) => ({
+          ...r,
+          is_private: false,
+        })));
       } catch (err: any) {
         console.error('Failed to fetch rooms:', err);
       } finally {
