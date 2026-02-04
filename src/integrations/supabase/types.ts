@@ -47,13 +47,6 @@ export type Database = {
             referencedRelation: "coding_rooms"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "coding_room_participants_room_id_fkey"
-            columns: ["room_id"]
-            isOneToOne: false
-            referencedRelation: "coding_rooms_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       coding_rooms: {
@@ -283,114 +276,7 @@ export type Database = {
       }
     }
     Views: {
-      coding_room_participants_public: {
-        Row: {
-          created_at: string | null
-          id: string | null
-          last_seen_at: string | null
-          room_id: string | null
-          username: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string | null
-          last_seen_at?: string | null
-          room_id?: string | null
-          username?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string | null
-          last_seen_at?: string | null
-          room_id?: string | null
-          username?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "coding_room_participants_room_id_fkey"
-            columns: ["room_id"]
-            isOneToOne: false
-            referencedRelation: "coding_rooms"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "coding_room_participants_room_id_fkey"
-            columns: ["room_id"]
-            isOneToOne: false
-            referencedRelation: "coding_rooms_public"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      coding_rooms_public: {
-        Row: {
-          code: string | null
-          content: string | null
-          created_at: string | null
-          id: string | null
-          is_private: boolean | null
-          language: string | null
-          last_activity_at: string | null
-          name: string | null
-        }
-        Insert: {
-          code?: string | null
-          content?: string | null
-          created_at?: string | null
-          id?: string | null
-          is_private?: boolean | null
-          language?: string | null
-          last_activity_at?: string | null
-          name?: string | null
-        }
-        Update: {
-          code?: string | null
-          content?: string | null
-          created_at?: string | null
-          id?: string | null
-          is_private?: boolean | null
-          language?: string | null
-          last_activity_at?: string | null
-          name?: string | null
-        }
-        Relationships: []
-      }
-      pastes_public: {
-        Row: {
-          burn_after_read: boolean | null
-          content: string | null
-          created_at: string | null
-          expires_at: string | null
-          id: string | null
-          language: string | null
-          title: string | null
-          views: number | null
-          visibility: string | null
-        }
-        Insert: {
-          burn_after_read?: boolean | null
-          content?: string | null
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string | null
-          language?: string | null
-          title?: string | null
-          views?: number | null
-          visibility?: string | null
-        }
-        Update: {
-          burn_after_read?: boolean | null
-          content?: string | null
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string | null
-          language?: string | null
-          title?: string | null
-          views?: number | null
-          visibility?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       create_group: {
