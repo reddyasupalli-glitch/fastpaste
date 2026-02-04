@@ -88,26 +88,28 @@ const CodingRoom = () => {
       if (!roomCode) return;
 
       try {
-        const { data, error } = await supabase
-          .from('coding_rooms')
-          .select('*')
-          .eq('code', roomCode.toUpperCase())
-          .single();
+        // Use secure function that doesn't expose session_token
+        const { data, error } = await supabase.rpc('get_room_by_code', { room_code: roomCode });
 
         if (error) throw error;
-        if (!data) {
+        if (!data || data.length === 0) {
           setError('Room not found');
           return;
         }
 
-        setRoom(data);
-        setContent(data.content || '');
-        setLanguage(data.language || 'javascript');
-        lastBroadcastContent.current = data.content || '';
-        
-        // Check if current user is owner
-        const sessionToken = getSessionToken();
-        setIsOwner(data.session_token === sessionToken || data.created_by === sessionToken);
+        const roomData = data[0];
+        setRoom({
+          id: roomData.id,
+          code: roomData.code,
+          name: roomData.name,
+          content: roomData.content || '',
+          language: roomData.language,
+          is_private: roomData.is_private,
+        });
+        setContent(roomData.content || '');
+        setLanguage(roomData.language || 'javascript');
+        lastBroadcastContent.current = roomData.content || '';
+        setIsOwner(roomData.is_owner);
       } catch (err: any) {
         setError(err.message || 'Failed to load room');
       } finally {

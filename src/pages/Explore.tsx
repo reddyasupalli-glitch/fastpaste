@@ -39,32 +39,19 @@ const Explore = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch trending pastes (most views)
-        const { data: trendingData } = await supabase
-          .from('pastes')
-          .select('id, title, language, views, created_at, burn_after_read')
-          .eq('visibility', 'public')
-          .order('views', { ascending: false })
-          .limit(10);
+        // Fetch public pastes using secure function
+        const { data: pastesData } = await supabase.rpc('list_public_pastes', { limit_count: 20 });
 
-        // Fetch recent pastes
-        const { data: recentData } = await supabase
-          .from('pastes')
-          .select('id, title, language, views, created_at, burn_after_read')
-          .eq('visibility', 'public')
-          .order('created_at', { ascending: false })
-          .limit(10);
+        // Fetch active rooms using secure function
+        const { data: roomsData } = await supabase.rpc('list_public_rooms', { limit_count: 10 });
 
-        // Fetch active rooms
-        const { data: roomsData } = await supabase
-          .from('coding_rooms')
-          .select('id, code, name, language, last_activity_at')
-          .eq('is_private', false)
-          .order('last_activity_at', { ascending: false })
-          .limit(10);
+        const sortedByViews = [...(pastesData || [])].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 10);
+        const sortedByDate = [...(pastesData || [])].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ).slice(0, 10);
 
-        setPastes(trendingData || []);
-        setRecentPastes(recentData || []);
+        setPastes(sortedByViews);
+        setRecentPastes(sortedByDate);
         setRooms(roomsData || []);
       } catch (err) {
         console.error('Failed to fetch data:', err);
